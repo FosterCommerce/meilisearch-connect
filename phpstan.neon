@@ -1,0 +1,6 @@
+includes:
+    - vendor/fostercommerce/phpstan/phpstan.neon
+
+parameters:
+    paths:
+        - src

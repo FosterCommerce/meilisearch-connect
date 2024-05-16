@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+jobs:
+  ecs:
+    name: ECS Check
+    runs-on: ubuntu-latest
+    env:
+      DEFAULT_COMPOSER_FLAGS: "--no-interaction --no-ansi --no-progress"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.1
+      - run: composer install --prefer-dist --no-progress
+      - name: Run ecs check
+        run: |
+          vendor/bin/ecs --memory-limit=1G --no-progress-bar
+  rector:
+    name: Rector dry-run
+    runs-on: ubuntu-latest
+    env:
+      DEFAULT_COMPOSER_FLAGS: "--no-interaction --no-ansi --no-progress"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.1
+      - run: composer install --prefer-dist --no-progress
+      - name: Run rector --dry-run
+        run: |
+          vendor/bin/rector --memory-limit=1G --no-progress-bar --dry-run
+  phpstan:
+    name: PHPStan
+    runs-on: ubuntu-latest
+    env:
+      DEFAULT_COMPOSER_FLAGS: "--no-interaction --no-ansi --no-progress"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.1
+      - run: composer install --prefer-dist --no-progress
+      - name: Run phpstan
+        run: |
+          vendor/bin/phpstan --memory-limit=1G

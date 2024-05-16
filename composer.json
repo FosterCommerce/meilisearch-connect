@@ -1,0 +1,57 @@
+{
+  "name": "fostercommerce/craft-meilisearch",
+  "type": "craft-plugin",
+  "license": "proprietary",
+  "version": "0.1.0",
+  "support": {
+    "email": "support@fostercommerce.com",
+    "issues": "https://github.com/fostercommerce/craft-meilisearch/issues?state=open",
+    "source": "https://github.com/fostercommerce/craft-meilisearch",
+    "docs": "https://github.com/fostercommerce/craft-meilisearch",
+    "rss": "https://github.com/fostercommerce/craft-meilisearch/releases.atom"
+  },
+  "require": {
+    "php": ">=8.1",
+    "craftcms/cms": "^4.6.0",
+    "meilisearch/meilisearch-php": "^1.6.0"
+  },
+  "require-dev": {
+    "roave/security-advisories": "dev-latest",
+    "fostercommerce/ecs": "dev-main",
+    "phpstan/phpdoc-parser": "1.26.0",
+    "phpstan/phpstan": "1.10.60",
+    "fostercommerce/phpstan": "dev-main",
+    "fostercommerce/rector": "dev-main"
+  },
+  "autoload": {
+    "psr-4": {
+      "fostercommerce\\meilisearch\\": "src/"
+    }
+  },
+  "extra": {
+    "handle": "meilisearch",
+    "name": "meilisearch",
+    "developer": "Foster Commerce",
+    "documentationUrl": "https://github.com/fostercommerce/craft-meilisearch"
+  },
+  "scripts": {
+    "phpstan": "phpstan --memory-limit=1G",
+    "ecs-check": "ecs check --ansi --memory-limit=1G",
+    "ecs-fix": "ecs check --ansi --fix --memory-limit=1G",
+    "rector": "rector process --config rector.php",
+    "rector-dry-run": "rector process --dry-run --config rector.php"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "config": {
+    "sort-packages": true,
+    "platform": {
+      "php": "8.1"
+    },
+    "allow-plugins": {
+      "yiisoft/yii2-composer": true,
+      "craftcms/plugin-installer": true,
+      "php-http/discovery": true
+    }
+  }
+}
