@@ -2,16 +2,10 @@
 
 declare(strict_types=1);
 
-use fostercommerce\ecs\SetList;
-use Symplify\EasyCodingStandard\Config\ECSConfig;
+use fostercommerce\ecs\ECSConfig;
 
-return static function(ECSConfig $ecsConfig): void {
-    $ecsConfig->paths([
+return ECSConfig::configure()
+    ->withPaths([
         __DIR__ . '/src',
         __FILE__,
     ]);
-
-    $ecsConfig->sets([
-        SetList::CRAFT_CMS_4,
-    ]);
-};

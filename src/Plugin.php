@@ -37,7 +37,7 @@ class Plugin extends BasePlugin
     {
         parent::init();
 
-        Event::on(CraftVariable::class, CraftVariable::EVENT_INIT, static function(Event $event): void {
+        Event::on(CraftVariable::class, CraftVariable::EVENT_INIT, static function (Event $event): void {
             $variable = $event->sender;
             $variable->set('meilisearch', SearchVariable::class);
         });

@@ -28,7 +28,7 @@ return [
                     'maxValuesPerFacet' => 300,
                 ],
             ],
-            'fetch' => static fn(?int $id): array => [
+            'fetch' => static fn (?int $id): array => [
 
             ],
         ],

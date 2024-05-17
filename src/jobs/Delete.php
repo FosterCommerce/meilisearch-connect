@@ -13,7 +13,7 @@ class Delete extends BaseJob
 
     public function execute($queue): void
     {
-        Plugin::getInstance()->sync->delete($this->identifier, $this->indexName, );
+        Plugin::getInstance()->sync->delete($this->identifier, $this->indexName);
     }
 
     protected function defaultDescription(): ?string
