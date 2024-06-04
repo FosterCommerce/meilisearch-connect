@@ -24,7 +24,7 @@ class IndexSettings extends Model
     public array $filterableAttributes = [];
 
     /**
-     * @var string[]
+     * @var array{maxValuesPerFacet?: int, sortFacetValuesBy?: array<non-empty-string, 'count'|'alpha'>}
      */
     public array $faceting = [];
 }

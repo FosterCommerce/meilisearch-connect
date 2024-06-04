@@ -15,7 +15,7 @@ class Settings extends Model
     public ?string $meiliSearchApiKey = null;
 
     /**
-     * @var Index[]
+     * @var array<string, Index>
      */
     public array $indices;
 

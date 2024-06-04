@@ -77,14 +77,9 @@ class Sync extends Component
     private function getIndices(?string $indexName = null): array
     {
         if ($indexName !== null) {
-            $index = $this->_settings->indices[$indexName];
-            if ($index !== null) {
-                return [
-                    $indexName => $index,
-                ];
-            }
-
-            return [];
+            return [
+                $indexName => $this->_settings->indices[$indexName],
+            ];
         }
 
         return $this->_settings->indices;
