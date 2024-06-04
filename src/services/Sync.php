@@ -72,7 +72,7 @@ class Sync extends Component
     }
 
     /**
-     * @return Index[]
+     * @return array<string, Index>
      */
     private function getIndices(?string $indexName = null): array
     {
