@@ -8,16 +8,16 @@ use yii\web\ForbiddenHttpException;
 
 class SyncController extends Controller
 {
-    public $defaultAction = 'all';
+	public $defaultAction = 'all';
 
-    protected array|int|bool $allowAnonymous = self::ALLOW_ANONYMOUS_NEVER;
+	protected array|int|bool $allowAnonymous = self::ALLOW_ANONYMOUS_NEVER;
 
-    /**
-     * @throws ForbiddenHttpException
-     */
-    public function actionAll(): void
-    {
-        $this->requireAdmin();
-        Plugin::getInstance()->sync->syncIndices();
-    }
+	/**
+	 * @throws ForbiddenHttpException
+	 */
+	public function actionAll(): void
+	{
+		$this->requireAdmin();
+		Plugin::getInstance()->sync->syncIndices();
+	}
 }

@@ -7,11 +7,11 @@ use Meilisearch\Client as MeiliClient;
 
 trait Meili
 {
-    private MeiliClient $meiliClient;
+	private MeiliClient $meiliClient;
 
-    private function initMeiliClient(): void
-    {
-        $settings = Plugin::getInstance()->settings;
-        $this->meiliClient = new MeiliClient($settings->meiliHostUrl, $settings->meiliAdminApiKey);
-    }
+	private function initMeiliClient(): void
+	{
+		$settings = Plugin::getInstance()->settings;
+		$this->meiliClient = new MeiliClient($settings->meiliHostUrl, $settings->meiliAdminApiKey);
+	}
 }

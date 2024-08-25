@@ -1,55 +1,57 @@
 {
-  "name": "fostercommerce/meilisearch-connect",
-  "type": "craft-plugin",
-  "license": "proprietary",
-  "version": "0.1.0",
-  "support": {
-    "email": "support@fostercommerce.com",
-    "issues": "https://github.com/fostercommerce/meilisearch-connect/issues?state=open",
-    "source": "https://github.com/fostercommerce/meilisearch-connect",
-    "docs": "https://github.com/fostercommerce/meilisearch-connect",
-    "rss": "https://github.com/fostercommerce/meilisearch-connect/releases.atom"
-  },
-  "require": {
-    "php": ">=8.1",
-    "craftcms/cms": "^4.6.0|^5.0.0",
-    "meilisearch/meilisearch-php": "^1.6.0"
-  },
-  "require-dev": {
-    "roave/security-advisories": "dev-latest",
-    "fostercommerce/ecs": "dev-main",
-    "fostercommerce/phpstan": "dev-main",
-    "fostercommerce/rector": "dev-main"
-  },
-  "autoload": {
-    "psr-4": {
-      "fostercommerce\\meilisearch\\": "src/"
-    }
-  },
-  "extra": {
-    "handle": "meilisearch-connect",
-    "name": "Meilisearch Connect",
-    "developer": "Foster Commerce",
-    "documentationUrl": "https://github.com/fostercommerce/meilisearch-connect"
-  },
-  "scripts": {
-    "phpstan": "phpstan --memory-limit=1G",
-    "ecs-check": "ecs check --ansi --memory-limit=1G",
-    "ecs-fix": "ecs check --ansi --fix --memory-limit=1G",
-    "rector": "rector process --config rector.php",
-    "rector-dry-run": "rector process --dry-run --config rector.php"
-  },
-  "minimum-stability": "dev",
-  "prefer-stable": true,
-  "config": {
-    "sort-packages": true,
-    "platform": {
-      "php": "8.1"
-    },
-    "allow-plugins": {
-      "yiisoft/yii2-composer": true,
-      "craftcms/plugin-installer": true,
-      "php-http/discovery": true
-    }
-  }
+	"name": "fostercommerce/meilisearch-connect",
+	"type": "craft-plugin",
+	"license": "proprietary",
+	"version": "0.1.0",
+	"support": {
+		"email": "support@fostercommerce.com",
+		"issues": "https://github.com/fostercommerce/meilisearch-connect/issues?state=open",
+		"source": "https://github.com/fostercommerce/meilisearch-connect",
+		"docs": "https://github.com/fostercommerce/meilisearch-connect",
+		"rss": "https://github.com/fostercommerce/meilisearch-connect/releases.atom"
+	},
+	"require": {
+		"php": ">=8.1",
+		"craftcms/cms": "^4.6.0|^5.0.0",
+		"meilisearch/meilisearch-php": "^1.6.0"
+	},
+	"require-dev": {
+		"roave/security-advisories": "dev-latest",
+		"craftcms/phpstan": "dev-main",
+		"craftcms/rector": "dev-main",
+		"fostercommerce/ecs": "dev-main",
+		"fostercommerce/phpstan": "dev-main",
+		"fostercommerce/rector": "dev-main"
+	},
+	"autoload": {
+		"psr-4": {
+			"fostercommerce\\meilisearch\\": "src/"
+		}
+	},
+	"extra": {
+		"handle": "meilisearch-connect",
+		"name": "Meilisearch Connect",
+		"developer": "Foster Commerce",
+		"documentationUrl": "https://github.com/fostercommerce/meilisearch-connect"
+	},
+	"scripts": {
+		"phpstan": "phpstan --memory-limit=1G",
+		"ecs-check": "ecs check --ansi --memory-limit=1G",
+		"ecs-fix": "ecs check --ansi --fix --memory-limit=1G",
+		"rector": "rector process --config rector.php",
+		"rector-dry-run": "rector process --dry-run --config rector.php"
+	},
+	"minimum-stability": "dev",
+	"prefer-stable": true,
+	"config": {
+		"sort-packages": true,
+		"platform": {
+			"php": "8.1"
+		},
+		"allow-plugins": {
+			"yiisoft/yii2-composer": true,
+			"craftcms/plugin-installer": true,
+			"php-http/discovery": true
+		}
+	}
 }

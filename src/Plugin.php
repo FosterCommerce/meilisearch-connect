@@ -23,31 +23,31 @@ use yii\base\InvalidConfigException;
  */
 class Plugin extends BasePlugin
 {
-    public static function config(): array
-    {
-        return [
-            'components' => [
-                'search' => Search::class,
-                'sync' => Sync::class,
-            ],
-        ];
-    }
+	public static function config(): array
+	{
+		return [
+			'components' => [
+				'search' => Search::class,
+				'sync' => Sync::class,
+			],
+		];
+	}
 
-    public function init(): void
-    {
-        parent::init();
+	public function init(): void
+	{
+		parent::init();
 
-        Event::on(CraftVariable::class, CraftVariable::EVENT_INIT, static function (Event $event): void {
-            $variable = $event->sender;
-            $variable->set('meilisearch', SearchVariable::class);
-        });
-    }
+		Event::on(CraftVariable::class, CraftVariable::EVENT_INIT, static function (Event $event): void {
+			$variable = $event->sender;
+			$variable->set('meilisearch', SearchVariable::class);
+		});
+	}
 
-    /**
-     * @throws InvalidConfigException
-     */
-    protected function createSettingsModel(): ?Model
-    {
-        return Craft::createObject(Settings::class);
-    }
+	/**
+	 * @throws InvalidConfigException
+	 */
+	protected function createSettingsModel(): ?Model
+	{
+		return Craft::createObject(Settings::class);
+	}
 }
