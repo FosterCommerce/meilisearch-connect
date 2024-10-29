@@ -11,7 +11,7 @@
 		"rss": "https://github.com/fostercommerce/meilisearch-connect/releases.atom"
 	},
 	"require": {
-		"php": ">=8.1",
+		"php": "^8.1",
 		"craftcms/cms": "^4.6.0|^5.0.0",
 		"meilisearch/meilisearch-php": "^1.6.0"
 	},
@@ -36,18 +36,15 @@
 	},
 	"scripts": {
 		"phpstan": "phpstan --memory-limit=1G",
-		"ecs-check": "ecs check --ansi --memory-limit=1G",
-		"ecs-fix": "ecs check --ansi --fix --memory-limit=1G",
-		"rector": "rector process --config rector.php",
-		"rector-dry-run": "rector process --dry-run --config rector.php"
+		"ecs:check": "ecs check --ansi --memory-limit=1G",
+		"ecs:fix": "ecs check --ansi --fix --memory-limit=1G",
+		"rector:fix": "rector process --config rector.php",
+		"rector:dry-run": "rector process --dry-run --config rector.php"
 	},
 	"minimum-stability": "dev",
 	"prefer-stable": true,
 	"config": {
 		"sort-packages": true,
-		"platform": {
-			"php": "8.1"
-		},
 		"allow-plugins": {
 			"yiisoft/yii2-composer": true,
 			"craftcms/plugin-installer": true,

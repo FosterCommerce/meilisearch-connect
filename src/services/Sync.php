@@ -5,13 +5,12 @@ namespace fostercommerce\meilisearch\services;
 use fostercommerce\meilisearch\models\Index;
 use fostercommerce\meilisearch\models\Settings;
 use fostercommerce\meilisearch\Plugin;
+use Meilisearch\Exceptions\TimeOutException;
 use yii\base\Component;
 
 class Sync extends Component
 {
 	use Meili;
-
-	public const DEFAULT_PRIMARY_KEY = 'id';
 
 	private ?Settings $_settings = null;
 
@@ -23,6 +22,9 @@ class Sync extends Component
 		$this->_settings = Plugin::getInstance()->settings;
 	}
 
+	/**
+	 * @throws TimeOutException
+	 */
 	public function syncSettings(?string $indexName = null): void
 	{
 		foreach ($this->getIndices($indexName) as $indexHandle => $indexConfig) {
@@ -33,8 +35,12 @@ class Sync extends Component
 			$indexSettings = $indexConfig->settings;
 
 			$index->updateRankingRules($indexSettings->ranking);
-			$index->updateSearchableAttributes($indexSettings->searchableAttributes);
+			if ($indexSettings->searchableAttributes !== null) {
+				$index->updateSearchableAttributes($indexSettings->searchableAttributes);
+			}
+
 			$index->updateFilterableAttributes($indexSettings->filterableAttributes);
+			$index->updateSortableAttributes($indexSettings->sortableAttributes);
 			$index->updateFaceting($indexSettings->faceting);
 		}
 	}
@@ -44,10 +50,7 @@ class Sync extends Component
 		foreach ($this->getIndices($indexName) as $indexHandle => $indexConfig) {
 			$index = $this->meiliClient->index($indexHandle);
 			$fetch = $indexConfig->fetch;
-			$index->addDocuments(
-				$fetch($identifier),
-				$indexConfig->settings->primaryKey ?? self::DEFAULT_PRIMARY_KEY
-			);
+			$index->addDocuments($fetch($identifier), $indexConfig->settings->primaryKey);
 		}
 	}
 
@@ -57,10 +60,7 @@ class Sync extends Component
 			$index = $this->meiliClient->index($indexHandle);
 			$index->deleteAllDocuments();
 			$fetch = $indexConfig->fetch;
-			$index->addDocuments(
-				$fetch(null),
-				$indexConfig->settings->primaryKey ?? self::DEFAULT_PRIMARY_KEY
-			);
+			$index->addDocuments($fetch(null), $indexConfig->settings->primaryKey);
 		}
 	}
 
