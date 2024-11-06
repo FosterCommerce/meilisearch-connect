@@ -20,7 +20,7 @@ class SyncController extends Controller
 
 		foreach ($indices as $index) {
 			Plugin::getInstance()->sync->syncSettings($index);
-			$this->stdout("Synchronized settings for {$index->handle}");
+			$this->stdout("Synchronized settings for {$index->handle}" . PHP_EOL);
 		}
 
 		return ExitCode::OK;
