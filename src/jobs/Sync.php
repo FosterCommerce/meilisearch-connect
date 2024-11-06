@@ -3,17 +3,31 @@
 namespace fostercommerce\meilisearch\jobs;
 
 use craft\queue\BaseJob;
+use fostercommerce\meilisearch\models\Index;
 use fostercommerce\meilisearch\Plugin;
 
 class Sync extends BaseJob
 {
 	public ?string $indexName = null;
 
-	public mixed $identifier = null;
+	public null|string|int $identifier = null;
 
 	public function execute($queue): void
 	{
-		Plugin::getInstance()->sync->syncIndices($this->indexName, $this->identifier);
+		$indices = Plugin::getInstance()->settings->getIndices($this->indexName);
+		$totalPages = collect($indices)
+			->reduce(
+				fn ($total, Index $index): int => $total + ($index->getPageCount($this->identifier) ?? 0),
+				0
+			);
+
+		$currentPage = 0;
+		foreach ($indices as $index) {
+			foreach (Plugin::getInstance()->sync->sync($index, $this->identifier) as $chunkSize) {
+				++$currentPage;
+				$this->setProgress($queue, $currentPage / $totalPages);
+			}
+		}
 	}
 
 	protected function defaultDescription(): ?string

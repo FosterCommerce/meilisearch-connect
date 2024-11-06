@@ -3,8 +3,7 @@
 namespace fostercommerce\meilisearch\services;
 
 use fostercommerce\meilisearch\models\Index;
-use fostercommerce\meilisearch\models\Settings;
-use fostercommerce\meilisearch\Plugin;
+use Generator;
 use Meilisearch\Exceptions\TimeOutException;
 use yii\base\Component;
 
@@ -12,76 +11,56 @@ class Sync extends Component
 {
 	use Meili;
 
-	private ?Settings $_settings = null;
-
 	public function init(): void
 	{
 		parent::init();
 
 		$this->initMeiliClient();
-		$this->_settings = Plugin::getInstance()->settings;
 	}
 
 	/**
 	 * @throws TimeOutException
 	 */
-	public function syncSettings(?string $indexName = null): void
+	public function syncSettings(Index $index): void
 	{
-		foreach ($this->getIndices($indexName) as $indexHandle => $indexConfig) {
-			$createIndexRes = $this->meiliClient->createIndex($indexHandle);
-			$this->meiliClient->waitForTask($createIndexRes['taskUid']);
+		$createIndexRes = $this->meiliClient->createIndex($index->indexId);
+		$this->meiliClient->waitForTask($createIndexRes['taskUid']);
 
-			$index = $this->meiliClient->index($indexHandle);
-			$indexSettings = $indexConfig->settings;
+		$meilisearchIndex = $this->meiliClient->index($index->indexId);
+		$indexSettings = $index->getSettings();
 
-			$index->updateRankingRules($indexSettings->ranking);
-			if ($indexSettings->searchableAttributes !== null) {
-				$index->updateSearchableAttributes($indexSettings->searchableAttributes);
-			}
-
-			$index->updateFilterableAttributes($indexSettings->filterableAttributes);
-			$index->updateSortableAttributes($indexSettings->sortableAttributes);
-			$index->updateFaceting($indexSettings->faceting);
+		$meilisearchIndex->updateRankingRules($indexSettings->ranking);
+		if ($indexSettings->searchableAttributes !== null) {
+			$meilisearchIndex->updateSearchableAttributes($indexSettings->searchableAttributes);
 		}
+
+		$meilisearchIndex->updateFilterableAttributes($indexSettings->filterableAttributes);
+		$meilisearchIndex->updateSortableAttributes($indexSettings->sortableAttributes);
+		$meilisearchIndex->updateFaceting($indexSettings->faceting);
 	}
 
-	public function syncIndices(?string $indexName = null, ?string $identifier = null): void
+	public function flush(Index $index): void
 	{
-		foreach ($this->getIndices($indexName) as $indexHandle => $indexConfig) {
-			$index = $this->meiliClient->index($indexHandle);
-			$fetch = $indexConfig->fetch;
-			$index->addDocuments($fetch($identifier), $indexConfig->settings->primaryKey);
-		}
+		$this->meiliClient
+			->index($index->indexId)
+			->deleteAllDocuments();
 	}
 
-	public function refreshIndices(?string $indexName = null): void
+	public function delete(Index $index, string|int $identifier): void
 	{
-		foreach ($this->getIndices($indexName) as $indexHandle => $indexConfig) {
-			$index = $this->meiliClient->index($indexHandle);
-			$index->deleteAllDocuments();
-			$fetch = $indexConfig->fetch;
-			$index->addDocuments($fetch(null), $indexConfig->settings->primaryKey);
-		}
-	}
-
-	public function delete(string $identifier, ?string $indexName = null): void
-	{
-		foreach (array_keys($this->getIndices($indexName)) as $indexHandle) {
-			$this->meiliClient->index($indexHandle)->deleteDocument($identifier);
-		}
+		$this->meiliClient->index($index->indexId)->deleteDocument($identifier);
 	}
 
 	/**
-	 * @return array<string, Index>
+	 * @return Generator<int, int>
 	 */
-	private function getIndices(?string $indexName = null): array
+	public function sync(Index $index, null|string|int $identifier): Generator
 	{
-		if ($indexName !== null) {
-			return [
-				$indexName => $this->_settings->indices[$indexName],
-			];
+		foreach ($index->execFetchFn($identifier) as $chunk) {
+			$this->meiliClient
+				->index($index->indexId)
+				->addDocuments($chunk, $index->getSettings()->primaryKey);
+			yield count($chunk);
 		}
-
-		return $this->_settings->indices;
 	}
 }

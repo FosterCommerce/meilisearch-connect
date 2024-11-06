@@ -2,8 +2,9 @@
 
 namespace fostercommerce\meilisearch\controllers;
 
+use craft\helpers\Queue;
 use craft\web\Controller;
-use fostercommerce\meilisearch\Plugin;
+use fostercommerce\meilisearch\jobs\Sync as SyncJob;
 use yii\web\ForbiddenHttpException;
 
 class SyncController extends Controller
@@ -15,9 +16,10 @@ class SyncController extends Controller
 	/**
 	 * @throws ForbiddenHttpException
 	 */
-	public function actionAll(): void
+	public function actionAll(): bool
 	{
 		$this->requireAdmin();
-		Plugin::getInstance()->sync->syncIndices();
+		Queue::push(new SyncJob());
+		return true;
 	}
 }

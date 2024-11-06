@@ -4,6 +4,12 @@ namespace fostercommerce\meilisearch\models;
 
 use craft\base\Model;
 
+/**
+ * @phpstan-type FacetingParams array{
+ *     maxValuesPerFacet?: int,
+ *     sortFacetValuesBy?: array<non-empty-string, 'count'|'alpha'>
+ *  }
+ */
 class IndexSettings extends Model
 {
 	public const DEFAULT_PRIMARY_KEY = 'id';
@@ -18,7 +24,7 @@ class IndexSettings extends Model
 	/**
 	 * Ranking rules are built-in rules that rank search results according to certain criteria. They are applied in the same order in which they appear in the `rankingRules` array.
 	 *
-	 * @var string[]
+	 * @var non-empty-string[]
 	 */
 	public array $ranking = [];
 
@@ -27,21 +33,21 @@ class IndexSettings extends Model
 	 *
 	 * By default, the `searchableAttributes` array is equal to all fields in your dataset. This behavior is represented by the value `["*"]`.
 	 *
-	 * @var ?string[]
+	 * @var ?non-empty-string[]
 	 */
 	public ?array $searchableAttributes = null;
 
 	/**
 	 * Attributes in the `filterableAttributes` list can be used as filters or facets.
 	 *
-	 * @var string[]
+	 * @var non-empty-string[]
 	 */
 	public array $filterableAttributes = [];
 
 	/**
 	 * Attributes that can be used when sorting search results using the sort search parameter.
 	 *
-	 * @var string[]
+	 * @var non-empty-string[]
 	 */
 	public array $sortableAttributes = [];
 
@@ -50,7 +56,7 @@ class IndexSettings extends Model
 	 * - Define the maximum number of values returned by the facets search parameter
 	 * - Sort facet values by value count or alphanumeric order
 	 *
-	 * @var array{maxValuesPerFacet?: int, sortFacetValuesBy?: array<non-empty-string, 'count'|'alpha'>}
+	 * @var FacetingParams
 	 */
 	public array $faceting = [];
 }

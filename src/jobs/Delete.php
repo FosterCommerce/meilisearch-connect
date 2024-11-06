@@ -9,11 +9,16 @@ class Delete extends BaseJob
 {
 	public ?string $indexName = null;
 
-	public mixed $identifier;
+	public string|int $identifier;
 
 	public function execute($queue): void
 	{
-		Plugin::getInstance()->sync->delete($this->identifier, $this->indexName);
+		$indices = Plugin::getInstance()->settings->getIndices($this->indexName);
+
+		foreach ($indices as $i => $index) {
+			Plugin::getInstance()->sync->delete($index, $this->identifier);
+			$this->setProgress($queue, $i / count($indices));
+		}
 	}
 
 	protected function defaultDescription(): ?string
