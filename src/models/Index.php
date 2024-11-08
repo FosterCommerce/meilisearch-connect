@@ -6,7 +6,7 @@ use craft\base\Model;
 use Generator;
 
 /**
- * @phpstan-type FetchResult array<non-empty-string, mixed>
+ * @phpstan-type FetchResult array<int, array<non-empty-string, mixed>>
  * @phpstan-type FetchCallableReturn Generator<int, FetchResult>|FetchResult
  */
 class Index extends Model
@@ -33,11 +33,44 @@ class Index extends Model
 	public ?int $pageSize = null;
 
 	/**
-	 * @var ?callable(null|string|int, null|int): int
+	 * An optional callable that is used by the plugin when reporting progress on synchronization tasks.
+	 *
+	 * Example:
+	 *
+	 * ```php
+	 * static function (?int $pageSize): int {
+	 *   return ceil(Entry::find()->count() / ($pageSize ?? 100));
+	 * }
+	 * ```
+	 *
+	 * @var ?callable(null|int): int
 	 */
 	private $pages;
 
 	/**
+	 * A callback used to fetch data that should be synchronized to the index in a Meilisearch instance.
+	 *
+	 * The callable will possibly receive an identifier and a page size argument.
+	 *
+	 * It must return either an array of associative arrays, or a Generator, which yields associative arrays in chunks.
+	 *
+	 * It is preferable to use a generator so that the entire resultset isn't loaded into memory and sent to Meilisearch in a single chunk.
+	 *
+	 * See the {@see \fostercommerce\meilisearch\helpers\Fetch::createFetchFn} implementation for an example of a callable that returns a {@see \Generator}
+	 *
+	 * Example of a callable that returns an array:
+	 *
+	 * ```php
+	 * static function (?int $id, ?int $pageSize): array {
+	 *   return collect(Entry::find()->all())
+	 *     ->map(static fn ($entry) => [
+	 *       'id' => $entry->id,
+	 *       'title' => $entry->title,
+	 *       'description' => $entry->description,
+	 *     ]);
+	 * }
+	 * ```
+	 *
 	 * @var callable(null|string|int, null|int): FetchCallableReturn
 	 */
 	private $fetch;
@@ -92,7 +125,7 @@ class Index extends Model
 		return $this->settings;
 	}
 
-	public function getPageCount(null|string|int $identifier = null): ?int
+	public function getPageCount(): ?int
 	{
 		$pagesFn = $this->pages;
 
@@ -100,7 +133,7 @@ class Index extends Model
 			return null;
 		}
 
-		return $pagesFn($identifier, $this->pageSize);
+		return $pagesFn($this->pageSize);
 	}
 
 	/**

@@ -6,15 +6,27 @@ use craft\base\Model;
 
 class Settings extends Model
 {
+	/**
+	 * The Meilisearch host.
+	 */
 	public string $meiliHostUrl;
 
+	/**
+	 * The key used when updating indices.
+	 */
 	public string $meiliAdminApiKey;
 
+	// TODO possibly remove this
 	public ?string $meiliSearchUrl = null;
 
+	/**
+	 * The key used for searching against Meilisearch indices
+	 */
 	public ?string $meiliSearchApiKey = null;
 
 	/**
+	 * A list of configured indices
+	 *
 	 * @var array<non-empty-string, Index>
 	 */
 	public array $indices;

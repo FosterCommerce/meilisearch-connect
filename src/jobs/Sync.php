@@ -15,19 +15,28 @@ class Sync extends BaseJob
 	public function execute($queue): void
 	{
 		$indices = Plugin::getInstance()->settings->getIndices($this->indexName);
-		$totalPages = collect($indices)
-			->reduce(
-				fn ($total, Index $index): int => $total + ($index->getPageCount($this->identifier) ?? 0),
-				0
-			);
+
+		// Only get page count if we're not attempting to synchronize a specific item.
+		$totalPages = $this->identifier === null
+			? collect($indices)
+				->reduce(
+					fn ($total, Index $index): int => $total + ($index->getPageCount() ?? 0),
+					0
+				)
+			: 0;
 
 		$currentPage = 0;
 		foreach ($indices as $index) {
 			foreach (Plugin::getInstance()->sync->sync($index, $this->identifier) as $chunkSize) {
 				++$currentPage;
-				$this->setProgress($queue, $currentPage / $totalPages);
+
+				if ($totalPages > 0) {
+					$this->setProgress($queue, $currentPage / $totalPages);
+				}
 			}
 		}
+
+		$this->setProgress($queue, 1);
 	}
 
 	protected function defaultDescription(): ?string
