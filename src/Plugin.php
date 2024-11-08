@@ -92,9 +92,9 @@ class Plugin extends BasePlugin
 							}
 						} elseif ($query->status(null)->id($sender->id)->exists()) {
 							Queue::push(new DeleteJob([
-			'indexName' => $index->handle,
+								'indexName' => $index->handle,
 								'identifier' => $sender->id,
-		]));
+							]));
 						}
 					});
 				}
