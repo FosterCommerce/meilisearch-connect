@@ -117,9 +117,9 @@ class Index extends Model
 	}
 
 	/**
-	 * @param callable(Index): int $pages
+	 * @param ?callable(Index): int $pages
 	 */
-	public function setPages(callable $pages): void
+	public function setPages(?callable $pages): void
 	{
 		$this->pages = $pages;
 	}
