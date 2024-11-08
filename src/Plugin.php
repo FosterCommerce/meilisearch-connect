@@ -7,7 +7,6 @@ use craft\base\Element;
 use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
 use craft\elements\db\ElementQuery;
-use craft\elements\Entry;
 use craft\events\ModelEvent;
 use craft\helpers\ElementHelper;
 use craft\helpers\Queue;
@@ -80,40 +79,24 @@ class Plugin extends BasePlugin
 						return;
 					}
 
-					$status = $sender->getStatus();
-
-					// Determine which status to use to check if the element is active.
-					if ($sender instanceof Entry) {
-						$activeStatus = Entry::STATUS_LIVE;
-					} else {
-						$activeStatus = Element::STATUS_ENABLED;
-					}
-
-					if ($status === $activeStatus) {
-						// If an element is active, then we should update it in the index
-						$autoSyncIndices->each(static function (Index $index) use ($sender): void {
-							/** @var ElementQuery<array-key, Element> $query */
-							$query = $index->query;
+					$autoSyncIndices->each(static function (Index $index) use ($sender): void {
+						/** @var ElementQuery<array-key, Element> $query */
+						$query = $index->query;
+						if (in_array($sender->getStatus(), $index->activeStatuses, true)) {
+							// If an element is active, then we should update it in the index
 							if ($query->id($sender->id)->exists()) {
 								Queue::push(new SyncJob([
 									'indexName' => $index->handle,
 									'identifier' => $sender->id,
 								]));
 							}
-						});
-					} else {
-						// Otherwise, we should make sure that it is not in the index
-						$autoSyncIndices->each(static function (Index $index) use ($sender): void {
-							/** @var ElementQuery<array-key, Element> $query */
-							$query = $index->query;
-							if ($query->status(null)->id($sender->id)->exists()) {
-								Queue::push(new DeleteJob([
-									'indexName' => $index->handle,
-									'identifier' => $sender->id,
-								]));
-							}
-						});
-					}
+						} elseif ($query->status(null)->id($sender->id)->exists()) {
+							Queue::push(new DeleteJob([
+			'indexName' => $index->handle,
+								'identifier' => $sender->id,
+		]));
+						}
+					});
 				}
 			);
 

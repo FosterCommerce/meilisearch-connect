@@ -2,9 +2,11 @@
 
 namespace fostercommerce\meilisearch\models;
 
+use craft\base\Element;
 use craft\base\Model;
 use craft\elements\db\ElementQuery;
 use craft\elements\db\ElementQueryInterface;
+use craft\elements\Entry;
 use Generator;
 
 /**
@@ -47,6 +49,13 @@ class Index extends Model
 	 * `true` by default, however, it only automatically synchronizes data if `$query` is set to an {@see ElementQuery}.
 	 */
 	public bool $autoSync = true;
+
+	/**
+	 * Statuses to use during auto-sync to check whether an element is active or not.
+	 *
+	 * @var string[]
+	 */
+	public array $activeStatuses = [Element::STATUS_ENABLED, Entry::STATUS_LIVE];
 
 	/**
 	 * An optional callable that is used by the plugin when reporting progress on synchronization tasks.

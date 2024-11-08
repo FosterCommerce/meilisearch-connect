@@ -2,8 +2,10 @@
 
 namespace fostercommerce\meilisearch\builders;
 
+use craft\base\Element;
 use craft\elements\db\ElementQuery;
 use craft\elements\db\ElementQueryInterface;
+use craft\elements\Entry;
 use fostercommerce\meilisearch\helpers\Fetch;
 
 class IndexBuilder
@@ -20,6 +22,11 @@ class IndexBuilder
 	private mixed $query = null;
 
 	private bool $autoSync = true;
+
+	/**
+	 * @var string[]
+	 */
+	private array $activeStatuses = [Element::STATUS_ENABLED, Entry::STATUS_LIVE];
 
 	/**
 	 * @var ?callable
@@ -91,6 +98,15 @@ class IndexBuilder
 	}
 
 	/**
+	 * @param string[] $statuses
+	 */
+	public function withActiveStatuses(array $statuses = [Element::STATUS_ENABLED, Entry::STATUS_LIVE]): self
+	{
+		$this->activeStatuses = $statuses;
+		return $this;
+	}
+
+	/**
 	 * Set the callable that is used by the plugin when reporting progress on synchronization tasks.
 	 *
 	 * Example:
@@ -154,6 +170,7 @@ class IndexBuilder
 			'pageSize' => $this->pageSize,
 			'query' => $this->query,
 			'autoSync' => $this->autoSync,
+			'activeStatuses' => $this->activeStatuses,
 			'pages' => $this->pagesFn,
 			'fetch' => $this->fetchFn,
 		];
