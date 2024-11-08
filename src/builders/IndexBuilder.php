@@ -17,6 +17,10 @@ class IndexBuilder
 	 */
 	private array $settings;
 
+	private mixed $query = null;
+
+	private bool $autoSync = true;
+
 	/**
 	 * @var ?callable
 	 */
@@ -66,11 +70,23 @@ class IndexBuilder
 			throw new \RuntimeException('Query must be instance of ' . ElementQuery::class);
 		}
 
-		['pages' => $pages, 'fetch' => $fetch] = Fetch::createIndexFns($query, $transformer);
+		['query' => $query, 'fetch' => $fetch] = Fetch::propertiesFromElementQuery($query, $transformer);
 
-		$this->pagesFn = $pages;
+		$this->query = $query;
 		$this->fetchFn = $fetch;
 
+		return $this;
+	}
+
+	public function withQuery(mixed $query): self
+	{
+		$this->query = $query;
+		return $this;
+	}
+
+	public function withAutoSync(bool $enabled = true): self
+	{
+		$this->autoSync = $enabled;
 		return $this;
 	}
 
@@ -80,7 +96,7 @@ class IndexBuilder
 	 * Example:
 	 *
 	 * ```php
-	 * static function (?int $pageSize): int {
+	 * static function (Index $index, ?int $pageSize): int {
 	 *   return ceil(Entry::find()->count() / ($pageSize ?? 100));
 	 * }
 	 * ```
@@ -105,7 +121,7 @@ class IndexBuilder
 	 * Example of a callable that returns an array:
 	 *
 	 * ```php
-	 * static function (?int $id, ?int $pageSize): array {
+	 * static function (Index $index, ?int $id): array {
 	 *   return collect(Entry::find()->all())
 	 *     ->map(static fn ($entry) => [
 	 *       'id' => $entry->id,
@@ -136,6 +152,8 @@ class IndexBuilder
 			'indexId' => $this->indexId,
 			'settings' => $this->settings,
 			'pageSize' => $this->pageSize,
+			'query' => $this->query,
+			'autoSync' => $this->autoSync,
 			'pages' => $this->pagesFn,
 			'fetch' => $this->fetchFn,
 		];

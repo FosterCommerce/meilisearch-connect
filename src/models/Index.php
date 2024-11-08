@@ -3,6 +3,8 @@
 namespace fostercommerce\meilisearch\models;
 
 use craft\base\Model;
+use craft\elements\db\ElementQuery;
+use craft\elements\db\ElementQueryInterface;
 use Generator;
 
 /**
@@ -33,24 +35,38 @@ class Index extends Model
 	public ?int $pageSize = null;
 
 	/**
+	 * Optional query.
+	 *
+	 * If it's an {@see ElementQuery}, it can automatically be used to fetch the page count.
+	 */
+	public mixed $query = null;
+
+	/**
+	 * Automatically synchronize changes to data.
+	 *
+	 * `true` by default, however, it only automatically synchronizes data if `$query` is set to an {@see ElementQuery}.
+	 */
+	public bool $autoSync = true;
+
+	/**
 	 * An optional callable that is used by the plugin when reporting progress on synchronization tasks.
 	 *
 	 * Example:
 	 *
 	 * ```php
-	 * static function (?int $pageSize): int {
-	 *   return ceil(Entry::find()->count() / ($pageSize ?? 100));
+	 * static function (Index $index): int {
+	 *   return ceil(Entry::find()->count() / ($index->pageSize ?? 100));
 	 * }
 	 * ```
 	 *
-	 * @var ?callable(null|int): int
+	 * @var ?callable(Index): int
 	 */
 	private $pages;
 
 	/**
 	 * A callback used to fetch data that should be synchronized to the index in a Meilisearch instance.
 	 *
-	 * The callable will possibly receive an identifier and a page size argument.
+	 * The callable will receive a reference to it's Index and possibly an identifier.
 	 *
 	 * It must return either an array of associative arrays, or a Generator, which yields associative arrays in chunks.
 	 *
@@ -61,7 +77,7 @@ class Index extends Model
 	 * Example of a callable that returns an array:
 	 *
 	 * ```php
-	 * static function (?int $id, ?int $pageSize): array {
+	 * static function (Index $index, ?int $id): array {
 	 *   return collect(Entry::find()->all())
 	 *     ->map(static fn ($entry) => [
 	 *       'id' => $entry->id,
@@ -71,7 +87,7 @@ class Index extends Model
 	 * }
 	 * ```
 	 *
-	 * @var callable(null|string|int, null|int): FetchCallableReturn
+	 * @var callable(Index, null|string|int): FetchCallableReturn
 	 */
 	private $fetch;
 
@@ -92,7 +108,7 @@ class Index extends Model
 	}
 
 	/**
-	 * @param callable(null|string|int): int $pages
+	 * @param callable(Index): int $pages
 	 */
 	public function setPages(callable $pages): void
 	{
@@ -100,7 +116,7 @@ class Index extends Model
 	}
 
 	/**
-	 * @param callable(null|string|int): FetchCallableReturn $fetch
+	 * @param callable(Index, null|string|int): FetchCallableReturn $fetch
 	 */
 	public function setFetch(callable $fetch): void
 	{
@@ -127,13 +143,19 @@ class Index extends Model
 
 	public function getPageCount(): ?int
 	{
+		if ($this->query instanceof ElementQueryInterface) {
+			/** @var int $count */
+			$count = $this->query->count();
+			return $count;
+		}
+
 		$pagesFn = $this->pages;
 
 		if ($pagesFn === null) {
 			return null;
 		}
 
-		return $pagesFn($this->pageSize);
+		return $pagesFn($this);
 	}
 
 	/**
@@ -142,7 +164,7 @@ class Index extends Model
 	public function execFetchFn(null|string|int $identifier = null): Generator
 	{
 		$fetchFn = $this->fetch;
-		$result = $fetchFn($identifier, $this->pageSize);
+		$result = $fetchFn($this, $identifier);
 
 		if ($result instanceof Generator) {
 			foreach ($result as $chunk) {

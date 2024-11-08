@@ -4,14 +4,15 @@ namespace fostercommerce\meilisearch\helpers;
 
 use craft\base\ElementInterface;
 use craft\elements\db\ElementQuery;
+use fostercommerce\meilisearch\models\Index;
 use Generator;
 
 /**
  * @template TKey of array-key
  * @template TElement of ElementInterface
  * @phpstan-type TransformerFn callable(TElement): array<non-empty-string, mixed>
- * @phpstan-type PagesFn callable(null|int): int
- * @phpstan-type FetchFn callable(null|string|int, null|int): Generator<int, array<non-empty-string, mixed>>
+ * @phpstan-type PagesFn callable(Index): int
+ * @phpstan-type FetchFn callable(Index, null|string|int): Generator<int, array<non-empty-string, mixed>>
  */
 class Fetch
 {
@@ -24,48 +25,37 @@ class Fetch
 	 * @param ElementQuery<TKey, TElement> $query
 	 * @param TransformerFn $transformer
 	 * @return array{
-	 *     pages: PagesFn,
+	 *     query: ElementQuery<TKey, TElement>,
 	 *     fetch: FetchFn,
 	 * }
 	 */
-	public static function createIndexFns(ElementQuery $query, callable $transformer): array
+	public static function propertiesFromElementQuery(ElementQuery $query, callable $transformer): array
 	{
 		return [
-			'pages' => self::createPageCountFn($query),
-			'fetch' => self::createFetchFn($query, $transformer),
+			'query' => $query,
+			'fetch' => self::createFetchFn($transformer),
 		];
 	}
 
 	/**
-	 * @param ElementQuery<TKey, TElement> $query
-	 * @return PagesFn
-	 */
-	public static function createPageCountFn(ElementQuery $query): callable
-	{
-		return static function (?int $pageSize) use ($query): int {
-			/** @var int $count */
-			$count = $query->count();
-			return (int) ceil($count / ($pageSize ?? self::DEFAULT_PAGE_SIZE));
-		};
-	}
-
-	/**
-	 * @param ElementQuery<TKey, TElement> $query
 	 * @param TransformerFn $transformer
 	 * @return FetchFn
 	 */
-	public static function createFetchFn(ElementQuery $query, callable $transformer): callable
+	public static function createFetchFn(callable $transformer): callable
 	{
-		return static function (null|string|int $identifier, ?int $pageSize) use ($query, $transformer) {
+		return static function (Index $index, null|string|int $identifier) use ($transformer) {
+			/** @var ElementQuery<TKey, TElement> $indexQuery */
+			$indexQuery = $index->query;
+
 			if ($identifier !== null) {
-				$query->id($identifier);
+				$indexQuery->id($identifier);
 			}
 
 			$page = 0;
-			$pageSize ??= self::DEFAULT_PAGE_SIZE;
+			$pageSize = $index->pageSize ?? self::DEFAULT_PAGE_SIZE;
 
 			do {
-				$query = $query->offset($page * $pageSize)->limit($pageSize);
+				$query = $indexQuery->offset($page * $pageSize)->limit($pageSize);
 				$items = $query->all();
 
 				yield array_map($transformer, $items);
