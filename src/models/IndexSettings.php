@@ -18,6 +18,8 @@ class IndexSettings extends Model
 	 * Primary key of the index. If not specified, Meilisearch guesses your primary key from the first document you add to the index.
 	 *
 	 * This plugin defaults the primary key to `id` which matches most Craft elements.
+	 *
+	 * Set this to null to let Meilisearch infer the primary key.
 	 */
 	public ?string $primaryKey = self::DEFAULT_PRIMARY_KEY;
 

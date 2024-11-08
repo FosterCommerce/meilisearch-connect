@@ -41,6 +41,13 @@ class IndexSettingsBuilder
 		return new self();
 	}
 
+	/**
+	 * Primary key of the index. If not specified, Meilisearch guesses your primary key from the first document you add to the index.
+	 *
+	 * This plugin defaults the primary key to `id` which matches most Craft elements.
+	 *
+	 * Set this to null to let Meilisearch infer the primary key.
+	 */
 	public function withPrimaryKey(?string $primaryKey): self
 	{
 		$this->primaryKey = $primaryKey;
@@ -48,6 +55,8 @@ class IndexSettingsBuilder
 	}
 
 	/**
+	 * Ranking rules are built-in rules that rank search results according to certain criteria. They are applied in the same order in which they appear in the `rankingRules` array.
+	 *
 	 * @param non-empty-string[] $ranking
 	 */
 	public function withRanking(array $ranking): self
@@ -57,6 +66,10 @@ class IndexSettingsBuilder
 	}
 
 	/**
+	 * The values associated with attributes in the `searchableAttributes` list are searched for matching query words. The order of the list also determines the attribute ranking order.
+	 *
+	 * By default, the `searchableAttributes` array is equal to all fields in your dataset. This behavior is represented by the value `["*"]`.
+	 *
 	 * @param ?non-empty-string[] $searchableAttributes
 	 */
 	public function withSearchableAttributes(?array $searchableAttributes): self
@@ -66,6 +79,8 @@ class IndexSettingsBuilder
 	}
 
 	/**
+	 * Attributes in the `filterableAttributes` list can be used as filters or facets.
+	 *
 	 * @param non-empty-string[] $filterableAttributes
 	 */
 	public function withFilterableAttributes(array $filterableAttributes): self
@@ -75,6 +90,8 @@ class IndexSettingsBuilder
 	}
 
 	/**
+	 * Attributes that can be used when sorting search results using the sort search parameter.
+	 *
 	 * @param non-empty-string[] $sortableAttributes
 	 */
 	public function withSortableAttributes(array $sortableAttributes): self
@@ -84,6 +101,10 @@ class IndexSettingsBuilder
 	}
 
 	/**
+	 * With Meilisearch, you can create faceted search interfaces. This setting allows you to:
+	 * - Define the maximum number of values returned by the facets search parameter
+	 * - Sort facet values by value count or alphanumeric order
+	 *
 	 * @param FacetingParams $faceting
 	 */
 	public function withFaceting(array $faceting): self
@@ -95,7 +116,7 @@ class IndexSettingsBuilder
 	/**
 	 * Build and return the configuration array
 	 *
-	 * @return array<string, mixed>
+	 * @return array<non-empty-string, mixed>
 	 */
 	public function build(): array
 	{
