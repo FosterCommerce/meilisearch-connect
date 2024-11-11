@@ -29,7 +29,7 @@ class Settings extends Model
 	 *
 	 * @var array<non-empty-string, Index>
 	 */
-	public array $indices;
+	public array $indices = [];
 
 	/**
 	 * @param array{
