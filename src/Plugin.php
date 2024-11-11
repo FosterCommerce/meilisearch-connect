@@ -70,7 +70,7 @@ class Plugin extends BasePlugin
 			Event::on(
 				Element::class,
 				Element::EVENT_AFTER_SAVE,
-				static function (ModelEvent $event) use ($autoSyncIndices): void {
+				static function (Event $event) use ($autoSyncIndices): void {
 					/** @var Element $sender */
 					$sender = $event->sender;
 
