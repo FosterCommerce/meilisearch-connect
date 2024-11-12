@@ -16,7 +16,6 @@
 		"meilisearch/meilisearch-php": "^1.6.0"
 	},
 	"require-dev": {
-		"roave/security-advisories": "dev-latest",
 		"craftcms/phpstan": "dev-main",
 		"craftcms/rector": "dev-main",
 		"fostercommerce/ecs": "dev-main",
