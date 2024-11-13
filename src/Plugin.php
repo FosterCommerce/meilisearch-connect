@@ -7,6 +7,7 @@ use craft\base\Element;
 use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
 use craft\elements\db\ElementQuery;
+use craft\events\ModelEvent;
 use craft\helpers\ElementHelper;
 use craft\helpers\Queue;
 use craft\web\twig\variables\CraftVariable;
@@ -69,7 +70,7 @@ class Plugin extends BasePlugin
 			Event::on(
 				Element::class,
 				Element::EVENT_AFTER_SAVE,
-				static function (Event $event) use ($autoSyncIndices): void {
+				static function (ModelEvent $event) use ($autoSyncIndices): void {
 					/** @var Element $sender */
 					$sender = $event->sender;
 
