@@ -32,7 +32,7 @@ class Search extends Component
 			'results' => $results['results'],
 			'pagination' => Craft::createObject(
 				Paginate::class,
-				$results['pagination'],
+				[$results['pagination']],
 			),
 		];
 	}
