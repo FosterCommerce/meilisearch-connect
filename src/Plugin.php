@@ -7,7 +7,6 @@ use craft\base\Element;
 use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
 use craft\elements\db\ElementQuery;
-use craft\events\ModelEvent;
 use craft\helpers\ElementHelper;
 use craft\helpers\Queue;
 use craft\web\twig\variables\CraftVariable;
