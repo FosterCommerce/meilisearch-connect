@@ -27,18 +27,17 @@ class Search extends Component
 			...$searchParams,
 		];
 		$results = Plugin::getInstance()->search->search($indexHandle, $query, $searchParams, $options);
-
-
+		$offset = ($results->getHitsPerPage() * ($results->getPage() - 1));
 
 		return [
-			'results' => $results['results'],
+			'results' => $results->getHits(),
 			'pagination' => Craft::createObject([
 				'class' => Paginate::class,
-				'first' => $results['pagination']['first'],
-				'last' => $results['pagination']['last'],
-				'total' => $results['pagination']['total'],
-				'currentPage' => $results['pagination']['currentPage'],
-				'totalPages' => $results['pagination']['totalPages'],
+				'first' => $offset + 1,
+				'last' => $offset + $results->getHitsCount(),
+				'total' => $results->getTotalHits(),
+				'currentPage' => $results->getPage(),
+				'totalPages' => $results->getTotalPages(),
 			]),
 		];
 	}

@@ -62,20 +62,22 @@ class Settings extends Model
 	}
 
 	/**
-	 * @return array<int, Index>
+	 * If $indexHandle is set, returns an `Index`. Otherwise, returns an array of indices
+	 *
+	 * @return ($indexHandle is non-empty-string ? Index : Index[])
 	 */
-	public function getIndices(?string $indexName = null): array
+	public function getIndices(?string $indexHandle = null): mixed
 	{
-		if ($indexName !== null) {
+		if ($indexHandle !== null) {
 			$result = array_filter([
-				$this->indices[$indexName] ?? null,
+				$this->indices[$indexHandle] ?? null,
 			]);
 
 			if ($result === []) {
-				throw new \RuntimeException("Index '{$indexName}' not found");
+				throw new \RuntimeException("Index '{$indexHandle}' not found");
 			}
 
-			return $result;
+			return $result[0];
 		}
 
 		return array_values($this->indices);

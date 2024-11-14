@@ -8,25 +8,41 @@ use fostercommerce\meilisearch\Plugin;
 
 class Sync extends BaseJob
 {
-	public ?string $indexName = null;
+	public ?string $indexHandle = null;
 
 	public null|string|int $identifier = null;
 
+	/**
+	 * @param array<array-key, mixed> $config
+	 */
+	public function __construct(array $config = [])
+	{
+		if (isset($config['indexName'])) {
+			// Index name is deprecated
+			$config['indexHandle'] = $config['indexName'];
+			unset($config['indexName']);
+		}
+
+		parent::__construct($config);
+	}
+
 	public function execute($queue): void
 	{
-		$indices = Plugin::getInstance()->settings->getIndices($this->indexName);
+		$indices = Plugin::getInstance()->settings->getIndices($this->indexHandle);
+
+		if ($indices instanceof Index) {
+			$indices = [$indices];
+		}
+
+		$indices = collect($indices);
 
 		// Only get page count if we're not attempting to synchronize a specific item.
 		$totalPages = $this->identifier === null
-			? collect($indices)
-				->reduce(
-					fn ($total, Index $index): int => $total + ($index->getPageCount() ?? 0),
-					0
-				)
+			? $indices->reduce(static fn ($total, Index $index): int => $total + ($index->getPageCount() ?? 0), 0)
 			: 0;
 
 		$currentPage = 0;
-		foreach ($indices as $index) {
+		$indices->each(function ($index) use ($queue, $totalPages, $currentPage): void {
 			foreach (Plugin::getInstance()->sync->sync($index, $this->identifier) as $chunkSize) {
 				++$currentPage;
 
@@ -34,7 +50,7 @@ class Sync extends BaseJob
 					$this->setProgress($queue, $currentPage / $totalPages);
 				}
 			}
-		}
+		});
 
 		$this->setProgress($queue, 1);
 	}
@@ -43,17 +59,17 @@ class Sync extends BaseJob
 	{
 		if ($this->identifier !== null) {
 			$description = "Sync {$this->identifier} in";
-			if ($this->indexName === null) {
+			if ($this->indexHandle === null) {
 				return "{$description} all indices";
 			}
 
-			return "{$description} {$this->indexName}";
+			return "{$description} {$this->indexHandle}";
 		}
 
-		if ($this->indexName === null) {
+		if ($this->indexHandle === null) {
 			return 'Sync all indices';
 		}
 
-		return "Sync {$this->indexName}";
+		return "Sync {$this->indexHandle}";
 	}
 }

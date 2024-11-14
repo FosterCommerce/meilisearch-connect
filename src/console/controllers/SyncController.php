@@ -3,6 +3,7 @@
 namespace fostercommerce\meilisearch\console\controllers;
 
 use craft\console\Controller;
+use fostercommerce\meilisearch\models\Index;
 use fostercommerce\meilisearch\Plugin;
 use Meilisearch\Exceptions\TimeOutException;
 use yii\console\ExitCode;
@@ -39,13 +40,10 @@ class SyncController extends Controller
 		return ExitCode::OK;
 	}
 
-	public function actionIndex(string $indexName): int
+	public function actionIndex(string $indexHandle): int
 	{
-		$index = Plugin::getInstance()->settings->getIndices($indexName)[0] ?? null;
-
-		if ($index === null) {
-			throw new \RuntimeException("Index {$indexName} does not exist.");
-		}
+		/** @var Index $index */
+		$index = Plugin::getInstance()->settings->getIndices($indexHandle);
 
 		foreach (Plugin::getInstance()->sync->sync($index, null) as $chunkSize) {
 			$this->stdout("Synchronized {$chunkSize} documents to {$index->handle}" . PHP_EOL);
@@ -54,13 +52,10 @@ class SyncController extends Controller
 		return ExitCode::OK;
 	}
 
-	public function actionFlush(string $indexName): int
+	public function actionFlush(string $indexHandle): int
 	{
-		$index = Plugin::getInstance()->settings->getIndices($indexName)[0] ?? null;
-
-		if ($index === null) {
-			throw new \RuntimeException("Index {$indexName} does not exist.");
-		}
+		/** @var Index $index */
+		$index = Plugin::getInstance()->settings->getIndices($indexHandle);
 
 		Plugin::getInstance()->sync->flush($index);
 		$this->stdout("Flushed all documents from {$index->handle}" . PHP_EOL);

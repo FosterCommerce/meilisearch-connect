@@ -86,13 +86,13 @@ class Plugin extends BasePlugin
 							// If an element is active, then we should update it in the index
 							if ($query->id($sender->id)->exists()) {
 								Queue::push(new SyncJob([
-									'indexName' => $index->handle,
+									'indexHandle' => $index->handle,
 									'identifier' => $sender->id,
 								]));
 							}
 						} elseif ($query->status(null)->id($sender->id)->exists()) {
 							Queue::push(new DeleteJob([
-								'indexName' => $index->handle,
+								'indexHandle' => $index->handle,
 								'identifier' => $sender->id,
 							]));
 						}
@@ -111,7 +111,7 @@ class Plugin extends BasePlugin
 						$query = $index->query;
 						if ($query->status(null)->id($sender->id)->exists()) {
 							Queue::push(new DeleteJob([
-								'indexName' => $index->handle,
+								'indexHandle' => $index->handle,
 								'identifier' => $sender->id,
 							]));
 						}
