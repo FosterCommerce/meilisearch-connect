@@ -52,9 +52,9 @@ There are two recommended ways to keep data in Meilisearch indices up-to-date wi
 
 ```php
 Event::on(
-	  Product::class,
-	  Element::EVENT_AFTER_SAVE,
-	  static function (\craft\events\ModelEvent $event) {
+	Product::class,
+	Element::EVENT_AFTER_SAVE,
+		static function (\craft\events\ModelEvent $event) {
 		if (
 			! ElementHelper::isDraft($event->sender) &&
 			! $event->sender->resaving &&
@@ -76,7 +76,7 @@ Event::on(
 				]));
 			}
 		}
-	  }
+	}
 );
 ```
 
@@ -84,14 +84,14 @@ Event::on(
 
 ```php
 Event::on(
-	  Product::class,
-	  Element::EVENT_AFTER_DELETE,
-	  static function (\craft\events\Event $event) {
+	Product::class,
+	Element::EVENT_AFTER_DELETE,
+	static function (\craft\events\Event $event) {
 		$item = $event->sender;
 		Queue::push(new DeleteJob([
 			'identifier' => $item->id,
 		]));
-	  }
+	}
 );
 ```
 
@@ -123,3 +123,24 @@ Flushes data for all indices.
 ### `meilisearch-connect/sync/refresh-all`
 
 Flush and synchronize data for all indices.
+
+## Search
+
+### From Twig
+
+This plugin exposes a Twig Variable which can be used to search against your Meilisearch instance.
+
+```twig
+{% set searchResults = craft.meilisearch.search('my-index', query, {'hitsPerPage': 25}) %}
+```
+
+`search` takes four arguments. The index handle, your search query, search parameters, and an options array.
+
+The search parameters are [extra parameters](https://www.meilisearch.com/docs/reference/api/search#body) which are sent with the search request to Meilisearch. 
+
+Options are additional options to pass to [meilisearch-php](https://github.com/meilisearch/meilisearch-php).
+
+The return value is an associative array with the following keys:
+- `results`: An array of results containing the data for each record returned from Meilisearch.
+- `pagination`: A standard Craft pagination instance.
+

@@ -13,7 +13,7 @@ class Search extends Component
 
 	public function init(): void
 	{
-		$this->initMeiliClient();
+		$this->initMeiliClient(useSearchKey: true);
 	}
 
 	/**

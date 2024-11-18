@@ -15,7 +15,7 @@ class Sync extends Component
 	{
 		parent::init();
 
-		$this->initMeiliClient();
+		$this->initMeiliClient(useSearchKey: false);
 	}
 
 	/**

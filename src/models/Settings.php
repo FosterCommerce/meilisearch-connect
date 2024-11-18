@@ -9,15 +9,12 @@ class Settings extends Model
 	/**
 	 * The Meilisearch host.
 	 */
-	public string $meiliHostUrl;
+	public ?string $meiliHostUrl = null;
 
 	/**
 	 * The key used when updating indices.
 	 */
-	public string $meiliAdminApiKey;
-
-	// TODO possibly remove this
-	public ?string $meiliSearchUrl = null;
+	public ?string $meiliAdminApiKey = null;
 
 	/**
 	 * The key used for searching against Meilisearch indices

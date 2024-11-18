@@ -27,6 +27,7 @@ class Search extends Component
 			...$searchParams,
 		];
 		$results = Plugin::getInstance()->search->search($indexHandle, $query, $searchParams, $options);
+
 		$offset = ($results->getHitsPerPage() * ($results->getPage() - 1));
 
 		return [
