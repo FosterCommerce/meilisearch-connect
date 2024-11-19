@@ -129,9 +129,9 @@ class Index extends Model
 	}
 
 	/**
-	 * @param callable(Index, null|string|int): FetchCallableReturn $fetch
+	 * @param ?callable(Index, null|string|int): FetchCallableReturn $fetch
 	 */
-	public function setFetch(callable $fetch): void
+	public function setFetch(?callable $fetch): void
 	{
 		$this->fetch = $fetch;
 	}
