@@ -5,14 +5,26 @@ use fostercommerce\meilisearch\builders\IndexBuilder;
 use fostercommerce\meilisearch\builders\IndexSettingsBuilder;
 
 return [
+	/**
+	 * The host URL used when communicating with the Meilisearch instance.
+	 */
 	'meiliHostUrl' => 'http://localhost:7700',
+	/**
+	 * Meilisearch Admin API key used for updating index settings and syncing index data.
+	 */
 	'meiliAdminApiKey' => '<Meilisearch Admin Key>',
+	/**
+	 * Meilisearch Search API key used when performing searches using the plugins search service or with the Twig variable.
+	 */
 	'meiliSearchApiKey' => '<Meilisearch Search Key>',
+	/**
+	 * A list of indices that can be created and/or searched.
+	 */
 	'indices' => [
 		/**
-		 * The key here is the index name you would use when running commands against a specific index.
+		 * The key here is the index handle you would use when running commands against a specific index.
 		 *
-		 * This means you can always refer to the same index name in code and in commands.
+		 * This means you can always refer to the same index handle in code and in commands.
 		 *
 		 * For example:
 		 *
@@ -21,7 +33,7 @@ return [
 		 * craft meilisearch-connect/sync/index pages
 		 * ```
 		 */
-		'pages' => IndexBuilder::fromSettings(
+		'pages' => IndexBuilder::fromSettings( // Use IndexBuilder::create() for search-only config.
 			IndexSettingsBuilder::create()
 				// Optionally configure ranking rules
 				// See https://www.meilisearch.com/docs/reference/api/settings#ranking-rules

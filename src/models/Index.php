@@ -68,9 +68,11 @@ class Index extends Model
 	 * }
 	 * ```
 	 *
+	 * Not required to be set when using search-only functionality.
+	 *
 	 * @var ?callable(Index): int
 	 */
-	private $pages;
+	private mixed $pages = null;
 
 	/**
 	 * A callback used to fetch data that should be synchronized to the index in a Meilisearch instance.
@@ -96,7 +98,9 @@ class Index extends Model
 	 * }
 	 * ```
 	 *
-	 * @var callable(Index, null|string|int): FetchCallableReturn
+	 * Not required to be set when using search-only functionality.
+	 *
+	 * @var ?callable(Index, null|string|int): FetchCallableReturn
 	 */
 	private $fetch;
 
@@ -173,6 +177,11 @@ class Index extends Model
 	public function execFetchFn(null|string|int $identifier = null): Generator
 	{
 		$fetchFn = $this->fetch;
+
+		if ($fetchFn === null) {
+			throw new \RuntimeException('Fetch callable is not configured correctly');
+		}
+
 		$result = $fetchFn($this, $identifier);
 
 		if ($result instanceof Generator) {

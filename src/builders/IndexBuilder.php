@@ -49,6 +49,14 @@ class IndexBuilder
 	}
 
 	/**
+	 * Create a search only index
+	 */
+	public static function create(): self
+	{
+		return new self();
+	}
+
+	/**
 	 * The actual ID of the index on Meilisearch.
 	 *
 	 * This would usually be set via an environment variable for multiple environments.
@@ -117,7 +125,7 @@ class IndexBuilder
 	 * }
 	 * ```
 	 */
-	public function withPagesFn(callable $fn): self
+	public function withPagesFn(?callable $fn): self
 	{
 		$this->pagesFn = $fn;
 		return $this;
@@ -147,7 +155,7 @@ class IndexBuilder
 	 * }
 	 * ```
 	 */
-	public function withFetchFn(callable $fn): self
+	public function withFetchFn(?callable $fn): self
 	{
 		$this->fetchFn = $fn;
 		return $this;
@@ -160,10 +168,6 @@ class IndexBuilder
 	 */
 	public function build(): array
 	{
-		if ($this->fetchFn === null) {
-			throw new \RuntimeException('Fetch function is required');
-		}
-
 		return [
 			'indexId' => $this->indexId,
 			'settings' => $this->settings,
