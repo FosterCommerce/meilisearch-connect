@@ -15,9 +15,9 @@ class IndexBuilder
 	private ?int $pageSize = null;
 
 	/**
-	 * @var array<non-empty-string, mixed>
+	 * @var ?array<non-empty-string, mixed>
 	 */
-	private array $settings;
+	private ?array $settings = null;
 
 	private mixed $query = null;
 
