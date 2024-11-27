@@ -123,26 +123,21 @@ class Plugin extends BasePlugin
 			);
 		}
 
-		if (defined('Utilities::EVENT_REGISTER_UTILITY_TYPES')) {
-			Event::on(
-				Utilities::class,
-				/** @phpstan-ignore-next-line This has been renamed in later versions of Craft */
-				Utilities::EVENT_REGISTER_UTILITY_TYPES,
-				static function (RegisterComponentTypesEvent $event): void {
-					$event->types[] = Indices::class;
-				}
-			);
-		}
+		/** @var string $craftVersion */
+		$craftVersion = Craft::$app->getVersion();
 
-		if (defined('Utilities::EVENT_REGISTER_UTILITIES')) {
-			Event::on(
-				Utilities::class,
-				Utilities::EVENT_REGISTER_UTILITIES,
-				static function (RegisterComponentTypesEvent $event): void {
-					$event->types[] = Indices::class;
-				}
-			);
-		}
+		$registerUtilitiesEvent = version_compare($craftVersion, '5.0.0-RC1', '>=')
+			? Utilities::EVENT_REGISTER_UTILITIES
+			/** @phpstan-ignore-next-line This has been renamed in later versions of Craft */
+			: Utilities::EVENT_REGISTER_UTILITY_TYPES;
+
+		Event::on(
+			Utilities::class,
+			$registerUtilitiesEvent,
+			static function (RegisterComponentTypesEvent $event): void {
+				$event->types[] = Indices::class;
+			}
+		);
 	}
 
 	/**
