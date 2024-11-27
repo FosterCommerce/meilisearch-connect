@@ -8,8 +8,10 @@ use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
 use craft\elements\db\ElementQuery;
 use craft\events\ModelEvent;
+use craft\events\RegisterComponentTypesEvent;
 use craft\helpers\ElementHelper;
 use craft\helpers\Queue;
+use craft\services\Utilities;
 use craft\web\twig\variables\CraftVariable;
 use fostercommerce\meilisearch\jobs\Delete as DeleteJob;
 use fostercommerce\meilisearch\jobs\Sync as SyncJob;
@@ -17,6 +19,7 @@ use fostercommerce\meilisearch\models\Index;
 use fostercommerce\meilisearch\models\Settings;
 use fostercommerce\meilisearch\services\Search;
 use fostercommerce\meilisearch\services\Sync;
+use fostercommerce\meilisearch\utilities\Indices;
 use fostercommerce\meilisearch\variables\Search as SearchVariable;
 use yii\base\Event;
 use yii\base\InvalidConfigException;
@@ -116,6 +119,27 @@ class Plugin extends BasePlugin
 							]));
 						}
 					});
+				}
+			);
+		}
+
+		if (defined('Utilities::EVENT_REGISTER_UTILITY_TYPES')) {
+			Event::on(
+				Utilities::class,
+				/** @phpstan-ignore-next-line This has been renamed in later versions of Craft */
+				Utilities::EVENT_REGISTER_UTILITY_TYPES,
+				static function (RegisterComponentTypesEvent $event): void {
+					$event->types[] = Indices::class;
+				}
+			);
+		}
+
+		if (defined('Utilities::EVENT_REGISTER_UTILITIES')) {
+			Event::on(
+				Utilities::class,
+				Utilities::EVENT_REGISTER_UTILITIES,
+				static function (RegisterComponentTypesEvent $event): void {
+					$event->types[] = Indices::class;
 				}
 			);
 		}

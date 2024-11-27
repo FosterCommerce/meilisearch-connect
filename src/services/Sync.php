@@ -63,4 +63,12 @@ class Sync extends Component
 			yield count($chunk);
 		}
 	}
+
+	public function getDocumentCount(Index $index): int
+	{
+		/** @var array{numberOfDocuments: int} $stats */
+		$stats = $this->meiliClient->index($index->indexId)->stats();
+
+		return $stats['numberOfDocuments'];
+	}
 }

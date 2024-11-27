@@ -1,0 +1,30 @@
+{% import '_includes/forms.twig' as forms %}
+
+{% for handle, index in indices %}
+<div style="margin-bottom: 2rem">
+	<h2>Handle: {{ handle }}</h2>
+	<p>Index ID: <strong>{{ index.indexId }}</strong></p>
+	<p>Document count: <strong>{{ index.documentCount }}</strong></p>
+	<div class="buttons">
+		<form class="utility" method="post" accept-charset="UTF-8">
+			{{ csrfInput() }}
+			{{ actionInput('meilisearch-connect/sync/settings') }}
+			{{ hiddenInput('handle', handle) }}
+			<button type="submit" class="btn submit">{{ 'Sync Settings'|t('meilisearch-connect') }}</button>
+		</form>
+		<form class="utility" method="post" accept-charset="UTF-8">
+			{{ csrfInput() }}
+			{{ actionInput('meilisearch-connect/sync/index') }}
+			{{ hiddenInput('handle', handle) }}
+			<button type="submit" class="btn submit">{{ 'Sync Index'|t('meilisearch-connect') }}</button>
+		</form>
+		<form class="utility" method="post" accept-charset="UTF-8">
+			{{ csrfInput() }}
+			{{ actionInput('meilisearch-connect/sync/flush') }}
+			{{ hiddenInput('handle', handle) }}
+			<button type="submit" class="btn submit">{{ 'Flush Index'|t('meilisearch-connect') }}</button>
+		</form>
+	</div>
+</div>
+
+{% endfor %}
