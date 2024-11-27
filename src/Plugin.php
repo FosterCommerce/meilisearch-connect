@@ -126,10 +126,9 @@ class Plugin extends BasePlugin
 		/** @var string $craftVersion */
 		$craftVersion = Craft::$app->getVersion();
 
-		$registerUtilitiesEvent = version_compare($craftVersion, '5.0.0-RC1', '>=')
-			? Utilities::EVENT_REGISTER_UTILITIES
-			/** @phpstan-ignore-next-line This has been renamed in later versions of Craft */
-			: Utilities::EVENT_REGISTER_UTILITY_TYPES;
+		$isCraft5 = version_compare($craftVersion, '5.0.0-RC1', '>=');
+		/** @phpstan-ignore-next-line This has been renamed in later versions of Craft */
+		$registerUtilitiesEvent = $isCraft5 ? Utilities::EVENT_REGISTER_UTILITIES : Utilities::EVENT_REGISTER_UTILITY_TYPES;
 
 		Event::on(
 			Utilities::class,
