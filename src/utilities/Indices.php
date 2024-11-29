@@ -23,7 +23,7 @@ class Indices extends Utility
 
 	public static function iconPath(): ?string
 	{
-		return null;
+		return Craft::getAlias('@fostercommerce/meilisearch/icon-mask.svg') ?: null;
 	}
 
 	public static function contentHtml(): string
