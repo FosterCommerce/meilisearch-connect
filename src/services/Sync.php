@@ -67,7 +67,7 @@ class Sync extends Component
 			$size = count($chunk);
 
 			// Remove any falsy values from the chunk of data.
-			$chunk = array_filter($chunk);
+			$chunk = array_values(array_filter($chunk));
 			$this->meiliClient
 				->index($index->indexId)
 				->addDocuments($chunk, $index->getSettings()->primaryKey);
