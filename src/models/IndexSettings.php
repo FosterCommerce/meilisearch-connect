@@ -58,7 +58,7 @@ class IndexSettings extends Model
 	 * - Define the maximum number of values returned by the facets search parameter
 	 * - Sort facet values by value count or alphanumeric order
 	 *
-	 * @var FacetingParams
+	 * @var ?FacetingParams
 	 */
-	public array $faceting = [];
+	public ?array $faceting = null;
 }

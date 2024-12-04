@@ -32,11 +32,18 @@ class Sync extends Component
 		$meilisearchIndex->updateRankingRules($indexSettings->ranking);
 		if ($indexSettings->searchableAttributes !== null) {
 			$meilisearchIndex->updateSearchableAttributes($indexSettings->searchableAttributes);
+		} else {
+			$meilisearchIndex->resetSearchableAttributes();
 		}
 
 		$meilisearchIndex->updateFilterableAttributes($indexSettings->filterableAttributes);
 		$meilisearchIndex->updateSortableAttributes($indexSettings->sortableAttributes);
-		$meilisearchIndex->updateFaceting($indexSettings->faceting);
+
+		if ($indexSettings->faceting !== null) {
+			$meilisearchIndex->updateFaceting($indexSettings->faceting);
+		} else {
+			$meilisearchIndex->resetFaceting();
+		}
 	}
 
 	public function flush(Index $index): void
