@@ -116,7 +116,9 @@ If you're planning on indexing elements, such as Entry's, you can make use of th
 
 This method takes an element query, and a transform function.
 
-The element query can be any implementation of `ElementQuery`. The transform function receives items from the result of the query and must return an associative array.
+The element query can be any implementation of `ElementQuery`. 
+
+The transform function receives items from the result of the query and must return an associative array. If the transform function returns a [falsey](https://www.php.net/manual/en/function.empty.php) value, then the item will be skipped from indexing.
 
 Set the `pageSize` using `withPagesSize` to configure how many elements should be indexed at a time when synchronizing an entire index.
 

@@ -64,10 +64,15 @@ class Sync extends Component
 	public function sync(Index $index, null|string|int $identifier): Generator
 	{
 		foreach ($index->execFetchFn($identifier) as $chunk) {
+			$size = count($chunk);
+
+			// Remove any falsy values from the chunk of data.
+			$chunk = array_filter($chunk);
 			$this->meiliClient
 				->index($index->indexId)
 				->addDocuments($chunk, $index->getSettings()->primaryKey);
-			yield count($chunk);
+
+			yield $size;
 		}
 	}
 

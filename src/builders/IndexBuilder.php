@@ -78,6 +78,8 @@ class IndexBuilder
 
 	/**
 	 * Configures the pages and fetch callables based on an element query and a transformer callable.
+	 *
+	 * If transform callable returns `false` or a falsey value, then the item will not be indexed.
 	 */
 	public function withElementQuery(ElementQueryInterface $query, callable $transformer): self
 	{
@@ -154,6 +156,8 @@ class IndexBuilder
 	 *     ]);
 	 * }
 	 * ```
+	 *
+	 * If the callable returns `false` or a falsey value, then the item will not be indexed.
 	 */
 	public function withFetchFn(?callable $fn): self
 	{

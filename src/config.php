@@ -69,6 +69,7 @@ return [
 			// item in the query.
 			->withElementQuery(
 				Entry::find(), // Get all entries
+				// Return false from this transform function to prevent this item from being indexed.
 				static fn (Entry $entry): array => [
 					// Transform the entry
 					'id' => $entry->id,

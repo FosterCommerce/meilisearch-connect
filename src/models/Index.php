@@ -100,6 +100,8 @@ class Index extends Model
 	 *
 	 * Not required to be set when using search-only functionality.
 	 *
+	 * If this callable returns `false` or a falsey value, then the item will not be indexed.
+	 *
 	 * @var ?callable(Index, null|string|int): FetchCallableReturn
 	 */
 	private $fetch;
