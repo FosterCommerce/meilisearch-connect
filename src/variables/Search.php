@@ -30,12 +30,14 @@ class Search extends Component
 
 		$offset = ($results->getHitsPerPage() * ($results->getPage() - 1));
 
+		$hits = $results->getHits();
+		$hitsCount = count($hits);
 		return [
-			'results' => $results->getHits(),
+			'results' => $hits,
 			'pagination' => Craft::createObject([
 				'class' => Paginate::class,
 				'first' => $offset + 1,
-				'last' => $offset + $results->getHitsCount(),
+				'last' => $offset + $hitsCount,
 				'total' => $results->getTotalHits(),
 				'currentPage' => $results->getPage(),
 				'totalPages' => $results->getTotalPages(),
