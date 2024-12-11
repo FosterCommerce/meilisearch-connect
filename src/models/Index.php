@@ -166,7 +166,7 @@ class Index extends Model
 		if ($this->query instanceof ElementQueryInterface) {
 			/** @var int $count */
 			$count = $this->query->count();
-			return $count;
+			return (int) ceil($count / ($this->pageSize ?? self::DEFAULT_PAGE_SIZE));
 		}
 
 		$pagesFn = $this->pages;
