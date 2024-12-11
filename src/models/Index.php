@@ -16,6 +16,11 @@ use Generator;
 class Index extends Model
 {
 	/**
+	 * @var int
+	 */
+	public const DEFAULT_PAGE_SIZE = 100;
+
+	/**
 	 * Handle to access the index with.
 	 *
 	 * This should be the same across environments.

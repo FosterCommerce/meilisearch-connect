@@ -17,11 +17,6 @@ use Generator;
 class Fetch
 {
 	/**
-	 * @var int
-	 */
-	public const DEFAULT_PAGE_SIZE = 100;
-
-	/**
 	 * @param ElementQuery<TKey, TElement> $query
 	 * @param TransformerFn $transformer
 	 * @return array{
@@ -52,7 +47,7 @@ class Fetch
 			}
 
 			$page = 0;
-			$pageSize = $index->pageSize ?? self::DEFAULT_PAGE_SIZE;
+			$pageSize = $index->pageSize ?? Index::DEFAULT_PAGE_SIZE;
 
 			do {
 				$query = $indexQuery->offset($page * $pageSize)->limit($pageSize);

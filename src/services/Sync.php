@@ -2,10 +2,12 @@
 
 namespace fostercommerce\meilisearch\services;
 
+use Craft;
 use fostercommerce\meilisearch\models\Index;
 use Generator;
 use Meilisearch\Exceptions\TimeOutException;
 use yii\base\Component;
+use yii\base\Exception;
 
 class Sync extends Component
 {
@@ -59,6 +61,7 @@ class Sync extends Component
 	}
 
 	/**
+	 * @param string|int|null $identifier The value used to identify a single item in the index
 	 * @return Generator<int, int>
 	 */
 	public function sync(Index $index, null|string|int $identifier): Generator
@@ -74,6 +77,41 @@ class Sync extends Component
 
 			yield $size;
 		}
+	}
+
+	/**
+	 * @return Generator<int, int>
+	 * @throws Exception
+	 * @throws TimeOutException
+	 */
+	public function refresh(Index $index): Generator
+	{
+		$swapIndex = clone $index;
+		$postfix = Craft::$app->getSecurity()->generateRandomString(12);
+		$swapIndex->indexId = "_swap_{$swapIndex->indexId}__{$postfix}";
+		$this->syncSettings($swapIndex);
+
+		foreach ($this->sync($swapIndex, null) as $size) {
+			yield $size;
+		}
+
+		$meiliIndex = $this->meiliClient->index($swapIndex->indexId);
+		$swapResult = $meiliIndex->swapIndexes([
+			[
+				'indexes' => [
+					$index->indexId,
+					$swapIndex->indexId,
+				],
+			],
+		]);
+
+		$swapResult = $this->meiliClient->waitForTask($swapResult['taskUid']);
+
+		if ($swapResult['status'] !== 'succeeded') {
+			throw new \RuntimeException($swapResult['error']['message'] ?? 'Failed to refresh index');
+		}
+
+		$meiliIndex->delete();
 	}
 
 	public function getDocumentCount(Index $index): int

@@ -81,11 +81,11 @@ class SyncController extends Controller
 		$indices = Plugin::getInstance()->settings->getIndices();
 
 		foreach ($indices as $index) {
-			$syncService->flush($index);
-			$this->stdout("Flushed all documents from {$index->handle}" . PHP_EOL);
-			foreach ($syncService->sync($index, null) as $chunkSize) {
-				$this->stdout("Synchronized {$chunkSize} documents to {$index->handle}" . PHP_EOL);
+			foreach ($syncService->refresh($index) as $chunkSize) {
+				// Do nothing
 			}
+
+			$this->stdout("Refreshed {$index->handle}" . PHP_EOL);
 		}
 
 		return ExitCode::OK;
