@@ -17,7 +17,7 @@ class SyncController extends Controller
 
 	public function actionIndex(): void
 	{
-		$this->requireAdmin();
+		$this->requireAdmin(false);
 		/** @var string $handle */
 		$handle = $this->request->getRequiredParam('handle');
 		Queue::push(new SyncJob([
@@ -28,14 +28,14 @@ class SyncController extends Controller
 
 	public function actionIndexAll(): void
 	{
-		$this->requireAdmin();
+		$this->requireAdmin(false);
 		Queue::push(new SyncJob());
 		$this->setSuccessFlash('Job added to the queue to sync all indices.');
 	}
 
 	public function actionRefresh(): void
 	{
-		$this->requireAdmin();
+		$this->requireAdmin(false);
 		/** @var string $handle */
 		$handle = $this->request->getRequiredParam('handle');
 		Queue::push(new RefreshJob([
@@ -46,14 +46,14 @@ class SyncController extends Controller
 
 	public function actionRefreshAll(): void
 	{
-		$this->requireAdmin();
+		$this->requireAdmin(false);
 		Queue::push(new RefreshJob());
 		$this->setSuccessFlash('Job added to the queue to refresh all indices.');
 	}
 
 	public function actionSettings(): void
 	{
-		$this->requireAdmin();
+		$this->requireAdmin(false);
 		/** @var string $handle */
 		$handle = $this->request->getRequiredParam('handle');
 		$plugin = Plugin::getInstance();
@@ -65,7 +65,7 @@ class SyncController extends Controller
 
 	public function actionSettingsAll(): void
 	{
-		$this->requireAdmin();
+		$this->requireAdmin(false);
 		$plugin = Plugin::getInstance();
 		/** @var Index[] $indices */
 		$indices = $plugin->getSettings()->getIndices();
@@ -78,7 +78,7 @@ class SyncController extends Controller
 
 	public function actionFlush(): void
 	{
-		$this->requireAdmin();
+		$this->requireAdmin(false);
 		/** @var string $handle */
 		$handle = $this->request->getRequiredParam('handle');
 		$plugin = Plugin::getInstance();
@@ -90,7 +90,7 @@ class SyncController extends Controller
 
 	public function actionFlushAll(): void
 	{
-		$this->requireAdmin();
+		$this->requireAdmin(false);
 		$plugin = Plugin::getInstance();
 		/** @var Index[] $indices */
 		$indices = $plugin->getSettings()->getIndices();
