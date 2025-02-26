@@ -28,23 +28,127 @@ class Sync extends Component
 		$createIndexRes = $this->meiliClient->createIndex($index->indexId);
 		$this->meiliClient->waitForTask($createIndexRes['taskUid']);
 
+		/** @var array{pkgVersion: string} $versionResponse */
+		$versionResponse = $this->meiliClient->version();
+		$version = $versionResponse['pkgVersion'];
+
 		$meilisearchIndex = $this->meiliClient->index($index->indexId);
 		$indexSettings = $index->getSettings();
 
-		$meilisearchIndex->updateRankingRules($indexSettings->ranking);
+		if ($indexSettings->sortableAttributes !== null) {
+			$meilisearchIndex->updateSortableAttributes($indexSettings->sortableAttributes);
+		} else {
+			$meilisearchIndex->resetSortableAttributes();
+		}
+
+		if ($indexSettings->dictionary !== null) {
+			$meilisearchIndex->updateDictionary($indexSettings->dictionary);
+		} else {
+			$meilisearchIndex->resetDictionary();
+		}
+
+		if ($indexSettings->displayedAttributes !== null) {
+			$meilisearchIndex->updateDisplayedAttributes($indexSettings->displayedAttributes);
+		} else {
+			$meilisearchIndex->resetDisplayedAttributes();
+		}
+
+		if ($indexSettings->distinctAttribute !== null) {
+			$meilisearchIndex->updateDistinctAttribute($indexSettings->distinctAttribute);
+		} else {
+			$meilisearchIndex->resetDistinctAttribute();
+		}
+
+		if ($indexSettings->faceting !== null) {
+			$meilisearchIndex->updateFaceting($indexSettings->faceting);
+		} else {
+			$meilisearchIndex->resetFaceting();
+		}
+
+		if ($indexSettings->filterableAttributes !== null) {
+			$meilisearchIndex->updateFilterableAttributes($indexSettings->filterableAttributes);
+		} else {
+			$meilisearchIndex->resetFilterableAttributes();
+		}
+
+		if ($indexSettings->pagination !== null) {
+			$meilisearchIndex->updatePagination($indexSettings->pagination);
+		} else {
+			$meilisearchIndex->resetPagination();
+		}
+
+		if ($indexSettings->proximityPrecision !== null) {
+			$meilisearchIndex->updateProximityPrecision($indexSettings->proximityPrecision);
+		} else {
+			$meilisearchIndex->resetProximityPrecision();
+		}
+
+		if ($indexSettings->ranking !== null) {
+			$meilisearchIndex->updateRankingRules($indexSettings->ranking);
+		} else {
+			$meilisearchIndex->resetRankingRules();
+		}
+
 		if ($indexSettings->searchableAttributes !== null) {
 			$meilisearchIndex->updateSearchableAttributes($indexSettings->searchableAttributes);
 		} else {
 			$meilisearchIndex->resetSearchableAttributes();
 		}
 
-		$meilisearchIndex->updateFilterableAttributes($indexSettings->filterableAttributes);
-		$meilisearchIndex->updateSortableAttributes($indexSettings->sortableAttributes);
-
-		if ($indexSettings->faceting !== null) {
-			$meilisearchIndex->updateFaceting($indexSettings->faceting);
+		if ($indexSettings->searchCutoffMs !== null) {
+			$meilisearchIndex->updateSearchCutoffMs($indexSettings->searchCutoffMs);
 		} else {
-			$meilisearchIndex->resetFaceting();
+			$meilisearchIndex->resetSearchCutoffMs();
+		}
+
+		if ($indexSettings->separatorTokens !== null) {
+			$meilisearchIndex->updateSeparatorTokens($indexSettings->separatorTokens);
+		} else {
+			$meilisearchIndex->resetSeparatorTokens();
+		}
+
+		if ($indexSettings->nonSeparatorTokens !== null) {
+			$meilisearchIndex->updateNonSeparatorTokens($indexSettings->nonSeparatorTokens);
+		} else {
+			$meilisearchIndex->resetNonSeparatorTokens();
+		}
+
+		if ($indexSettings->stopWords !== null) {
+			$meilisearchIndex->updateStopWords($indexSettings->stopWords);
+		} else {
+			$meilisearchIndex->resetStopWords();
+		}
+
+		if ($indexSettings->synonyms !== null) {
+			$meilisearchIndex->updateSynonyms($indexSettings->synonyms);
+		} else {
+			$meilisearchIndex->resetSynonyms();
+		}
+
+		if ($indexSettings->typoTolerance !== null) {
+			$meilisearchIndex->updateTypoTolerance($indexSettings->typoTolerance);
+		} else {
+			$meilisearchIndex->resetTypoTolerance();
+		}
+
+		if ($indexSettings->embedders !== null) {
+			$meilisearchIndex->updateEmbedders($indexSettings->embedders);
+		} else {
+			$meilisearchIndex->resetEmbedders();
+		}
+
+		if (version_compare($version, '1.12.0', '>=')) {
+			if ($indexSettings->facetSearch !== null) {
+				$meilisearchIndex->updateFacetSearch($indexSettings->facetSearch);
+			} else {
+				$meilisearchIndex->resetFacetSearch();
+			}
+
+			if ($indexSettings->prefixSearch !== null) {
+				$meilisearchIndex->updatePrefixSearch($indexSettings->prefixSearch);
+			} else {
+				$meilisearchIndex->resetPrefixSearch();
+			}
 		}
 	}
 

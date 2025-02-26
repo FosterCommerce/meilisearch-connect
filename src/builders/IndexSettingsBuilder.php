@@ -6,35 +6,107 @@ use fostercommerce\meilisearch\models\IndexSettings;
 
 /**
  * @phpstan-import-type FacetingParams from IndexSettings
+ * @phpstan-import-type PaginationParams from IndexSettings
+ * @phpstan-import-type TypoToleranceParams from IndexSettings
+ * @phpstan-import-type EmbeddedParams from IndexSettings
  */
 class IndexSettingsBuilder
 {
 	private ?string $primaryKey = IndexSettings::DEFAULT_PRIMARY_KEY;
 
 	/**
-	 * @var non-empty-string[]
+	 * @var ?non-empty-string[]
 	 */
-	private array $ranking = [];
+	private ?array $dictionary = null;
+
+	/**
+	 * @var ?non-empty-string[]
+	 */
+	private ?array $displayedAttributes = null;
+
+	/**
+	 * @var ?non-empty-string
+	 */
+	private ?string $distinctAttribute = null;
+
+	/**
+	 * @var ?FacetingParams
+	 */
+	private ?array $faceting = null;
+
+	/**
+	 * @var ?non-empty-string[]
+	 */
+	private ?array $filterableAttributes = null;
+
+	/**
+	 * @var ?PaginationParams
+	 */
+	private ?array $pagination = null;
+
+	/**
+	 * @var null|'byWord'|'byAttribute'
+	 */
+	private ?string $proximityPrecision = null;
+
+	/**
+	 * @since Meilisearch v1.12.0
+	 */
+	private ?bool $facetSearch = null;
+
+	/**
+	 * @var null|'indexingTime'|'disabled'
+	 *
+	 * @since Meilisearch v1.12.0
+	 */
+	private ?string $prefixSearch = null;
+
+	/**
+	 * @var ?non-empty-string[]
+	 */
+	private ?array $ranking = null;
 
 	/**
 	 * @var ?non-empty-string[]
 	 */
 	private ?array $searchableAttributes = null;
 
-	/**
-	 * @var non-empty-string[]
-	 */
-	private array $filterableAttributes = [];
+	private ?int $searchCutoffMs = null;
 
 	/**
-	 * @var non-empty-string[]
+	 * @var ?non-empty-string[]
 	 */
-	private array $sortableAttributes = [];
+	private ?array $separatorTokens = null;
 
 	/**
-	 * @var FacetingParams
+	 * @var ?non-empty-string[]
 	 */
-	private array $faceting = [];
+	private ?array $nonSeparatorTokens = null;
+
+	/**
+	 * @var ?non-empty-string[]
+	 */
+	private ?array $sortableAttributes = null;
+
+	/**
+	 * @var ?non-empty-string[]
+	 */
+	private ?array $stopWords = null;
+
+	/**
+	 * @var ?array<non-empty-string, non-empty-string[]>
+	 */
+	private ?array $synonyms = null;
+
+	/**
+	 * @var ?TypoToleranceParams
+	 */
+	private ?array $typoTolerance = null;
+
+	/**
+	 * @var ?EmbeddedParams
+	 */
+	private ?array $embedders = null;
 
 	public static function create(): self
 	{
@@ -114,6 +186,170 @@ class IndexSettingsBuilder
 	}
 
 	/**
+	 * @param array<non-empty-string, non-empty-string[]> $synonyms
+	 */
+	public function withSynonyms(array $synonyms): self
+	{
+		$this->synonyms = $synonyms;
+		return $this;
+	}
+
+	/**
+	 * List of strings Meilisearch should parse as a single term.
+	 * Default: []
+	 *
+	 * @param ?non-empty-string[] $dictionary
+	 */
+	public function withDictionary(?array $dictionary): self
+	{
+		$this->dictionary = $dictionary;
+		return $this;
+	}
+
+	/**
+	 * Fields displayed in the returned documents.
+	 * Default: ["*"]
+	 *
+	 * @param ?non-empty-string[] $displayedAttributes
+	 */
+	public function withDisplayedAttributes(?array $displayedAttributes): self
+	{
+		$this->displayedAttributes = $displayedAttributes;
+		return $this;
+	}
+
+	/**
+	 * Search returns documents with distinct (different) values of the given field.
+	 * Default: null
+	 *
+	 * @param ?non-empty-string $distinctAttribute
+	 */
+	public function withDistinctAttribute(?string $distinctAttribute): self
+	{
+		$this->distinctAttribute = $distinctAttribute;
+		return $this;
+	}
+
+	/**
+	 * Pagination settings (e.g., maxTotalHits).
+	 *
+	 * @param ?PaginationParams $pagination
+	 */
+	public function withPagination(?array $pagination): self
+	{
+		$this->pagination = $pagination;
+		return $this;
+	}
+
+	/**
+	 * Precision level when calculating the proximity ranking rule.
+	 * Default: "byWord"
+	 *
+	 * @param null|'byWord'|'byAttribute' $proximityPrecision
+	 */
+	public function withProximityPrecision(?string $proximityPrecision): self
+	{
+		$this->proximityPrecision = $proximityPrecision;
+		return $this;
+	}
+
+	/**
+	 * Enable or disable facet search functionality.
+	 * Default: true
+	 *
+	 * @since Meilisearch v1.12.0
+	 */
+	public function withFacetSearch(?bool $facetSearch): self
+	{
+		$this->facetSearch = $facetSearch;
+		return $this;
+	}
+
+	/**
+	 * When Meilisearch should return results only matching the beginning of the query.
+	 * Default: "indexingTime"
+	 *
+	 * @since Meilisearch v1.12.0
+	 *
+	 * @param null|'indexingTime'|'disabled' $prefixSearch
+	 */
+	public function withPrefixSearch(?string $prefixSearch): self
+	{
+		$this->prefixSearch = $prefixSearch;
+		return $this;
+	}
+
+	/**
+	 * Maximum duration of a search query (in milliseconds).
+	 * Default: null, or 1500
+	 */
+	public function withSearchCutoffMs(?int $searchCutoffMs): self
+	{
+		$this->searchCutoffMs = $searchCutoffMs;
+		return $this;
+	}
+
+	/**
+	 * List of characters delimiting where one term begins and ends.
+	 * Default: []
+	 *
+	 * @param ?non-empty-string[] $separatorTokens
+	 */
+	public function withSeparatorTokens(?array $separatorTokens): self
+	{
+		$this->separatorTokens = $separatorTokens;
+		return $this;
+	}
+
+	/**
+	 * List of characters that do NOT delimit where one term begins and ends.
+	 * Default: []
+	 *
+	 * @param ?non-empty-string[] $nonSeparatorTokens
+	 */
+	public function withNonSeparatorTokens(?array $nonSeparatorTokens): self
+	{
+		$this->nonSeparatorTokens = $nonSeparatorTokens;
+		return $this;
+	}
+
+	/**
+	 * List of words ignored by Meilisearch when present in search queries.
+	 * Default: []
+	 *
+	 * @param ?non-empty-string[] $stopWords
+	 */
+	public function withStopWords(?array $stopWords): self
+	{
+		$this->stopWords = $stopWords;
+		return $this;
+	}
+
+	/**
+	 * Typo tolerance settings.
+	 * Default: (see Meilisearch docs for default object)
+	 *
+	 * @param ?TypoToleranceParams $typoTolerance
+	 */
+	public function withTypoTolerance(?array $typoTolerance): self
+	{
+		$this->typoTolerance = $typoTolerance;
+		return $this;
+	}
+
+	/**
+	 * Embedder configurations for meaning\-based (semantic) search queries.
+	 * Default: (see Meilisearch docs for default object)
+	 *
+	 * @param ?EmbeddedParams $embedders
+	 */
+	public function withEmbedders(?array $embedders): self
+	{
+		$this->embedders = $embedders;
+		return $this;
+	}
+
+	/**
 	 * Build and return the configuration array
 	 *
 	 * @return array<non-empty-string, mixed>
@@ -122,11 +358,25 @@ class IndexSettingsBuilder
 	{
 		return [
 			'primaryKey' => $this->primaryKey,
+			'dictionary' => $this->dictionary,
+			'displayedAttributes' => $this->displayedAttributes,
+			'distinctAttribute' => $this->distinctAttribute,
+			'faceting' => $this->faceting,
+			'filterableAttributes' => $this->filterableAttributes,
+			'pagination' => $this->pagination,
+			'proximityPrecision' => $this->proximityPrecision,
+			'facetSearch' => $this->facetSearch,
+			'prefixSearch' => $this->prefixSearch,
 			'ranking' => $this->ranking,
 			'searchableAttributes' => $this->searchableAttributes,
-			'filterableAttributes' => $this->filterableAttributes,
+			'searchCutoffMs' => $this->searchCutoffMs,
+			'separatorTokens' => $this->separatorTokens,
+			'nonSeparatorTokens' => $this->nonSeparatorTokens,
 			'sortableAttributes' => $this->sortableAttributes,
-			'faceting' => $this->faceting,
+			'stopWords' => $this->stopWords,
+			'synonyms' => $this->synonyms,
+			'typoTolerance' => $this->typoTolerance,
+			'embedders' => $this->embedders,
 		];
 	}
 }
