@@ -1,4 +1,4 @@
-# Release Notes for meilisearch
+# Release Notes for Meilisearch Connect
 
-## 0.1.0
+## 1.0.0
 - Initial release
