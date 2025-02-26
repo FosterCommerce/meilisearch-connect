@@ -5,7 +5,9 @@ and custom fields to be indexed and searched efficiently.
 
 ## Requirements
 
-This plugin requires Craft CMS 4.6.0 or later, and PHP 8.1 or later.
+- PHP >=8.1.0
+- CraftCMS ^4.6.0|^5.0.0
+- Meilisearch ^1.11.0
 
 ## Installation
 
