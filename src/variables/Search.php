@@ -14,7 +14,7 @@ class Search extends Component
 	/**
 	 * @param array<non-empty-string, mixed> $searchParams
 	 * @param array<non-empty-string, mixed> $options
-	 * @return array{results: array<int, array<mixed, mixed>>, pagination: Paginate}
+	 * @return array{results: array<int, array<array-key, mixed>>, pagination: Paginate}
 	 * @throws InvalidConfigException
 	 */
 	public function search(string $indexHandle, string $query, array $searchParams = [], array $options = []): array
@@ -34,6 +34,7 @@ class Search extends Component
 		$hitsCount = count($hits);
 		return [
 			'results' => $hits,
+			'processingTimeMs' => $results->getProcessingTimeMs(),
 			'pagination' => Craft::createObject([
 				'class' => Paginate::class,
 				'first' => $offset + 1,
