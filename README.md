@@ -1,3 +1,5 @@
+![Meilisearch Connect Icon](resources/img/header.png)
+
 # Meilisearch Connect
 
 Meilisearch Connect enables seamless data synchronization between Craft CMS and Meilisearch, allowing your Craft entries
