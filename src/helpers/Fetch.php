@@ -24,7 +24,7 @@ class Fetch
 	 *     fetch: FetchFn,
 	 * }
 	 */
-	public static function propertiesFromElementQuery(ElementQuery $query, callable $transformer): array
+	public static function propertiesFromElementQuery(ElementQuery|callable $query, callable $transformer): array
 	{
 		return [
 			'query' => $query,

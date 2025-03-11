@@ -81,10 +81,10 @@ class IndexBuilder
 	 *
 	 * If transform callable returns `false` or a falsey value, then the item will not be indexed.
 	 */
-	public function withElementQuery(ElementQueryInterface $query, callable $transformer): self
+	public function withElementQuery(callable $query, callable $transformer): self
 	{
-		if (! $query instanceof ElementQuery) {
-			throw new \RuntimeException('Query must be instance of ' . ElementQuery::class);
+		if (!is_callable($query)) {
+			throw new \RuntimeException('Query must be a callable');
 		}
 
 		['query' => $query, 'fetch' => $fetch] = Fetch::propertiesFromElementQuery($query, $transformer);
