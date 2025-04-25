@@ -1,6 +1,7 @@
 <?php
 
 use craft\elements\Entry;
+use craft\elements\db\ElementQuery;
 use fostercommerce\meilisearch\builders\IndexBuilder;
 use fostercommerce\meilisearch\builders\IndexSettingsBuilder;
 
@@ -68,7 +69,9 @@ return [
 			// Set your element/entry query and include a transform function which will be applied to every
 			// item in the query.
 			->withElementQuery(
-				Entry::find(), // Get all entries
+				static function(): ElementQuery {
+					return Entry::find();
+				}, // Get all entries
 				// Return false from this transform function to prevent this item from being indexed.
 				static fn (Entry $entry): array => [
 					// Transform the entry
