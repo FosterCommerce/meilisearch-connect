@@ -314,4 +314,5 @@ Flush and synchronize data for all indices.
 
 A UI has been provided to allow quick and easy access to controls for syncing and flushing operations on all of your indexes. The utility can be found under Utilities->Meilisearch Connect.
 
+![Meilisearch Connect control panel utility](resources/img/cputility.png)
 
