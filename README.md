@@ -308,3 +308,10 @@ Flushes data for all indices.
 #### `meilisearch-connect/sync/refresh-all`
 
 Flush and synchronize data for all indices.
+
+
+### Control Panel Utility
+
+A UI has been provided to allow quick and easy access to controls for syncing and flushing operations on all of your indexes. The utility can be found under Utilities->Meilisearch Connect.
+
+
