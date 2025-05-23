@@ -34,6 +34,7 @@ class Search extends Component
 		$hitsCount = count($hits);
 		return [
 			'results' => $hits,
+			'facetDistribution' => $results->getFacetDistribution(),
 			'processingTimeMs' => $results->getProcessingTimeMs(),
 			'pagination' => Craft::createObject([
 				'class' => Paginate::class,
