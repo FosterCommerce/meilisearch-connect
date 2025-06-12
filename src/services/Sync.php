@@ -173,8 +173,27 @@ class Sync extends Component
 		foreach ($index->execFetchFn($identifier) as $chunk) {
 			$size = count($chunk);
 
-			// Remove any falsy values from the chunk of data.
-			$chunk = array_values(array_filter($chunk));
+			// Remove any falsy values from the chunk of data
+			// and flatten list arrays.
+			$chunk = array_values(
+				array_merge(
+					...array_map(
+						static function ($item) {
+							if (!$item) {
+								return [];
+							}
+
+							if (array_is_list($item)) {
+								return $item;
+							}
+
+							return [$item];
+						},
+						$chunk,
+					),
+				),
+			);
+
 			$this->meiliClient
 				->index($index->indexId)
 				->addDocuments($chunk, $index->getSettings()->primaryKey);
