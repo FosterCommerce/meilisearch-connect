@@ -20,29 +20,29 @@ use craft\base\Model;
  *         oneTypo: int,
  *         twoTypos: int
  *     },
- *     disableOnWords: non-empty-string[],
- *     disableOnAttributes: non-empty-string[]
+ *     disableOnWords: list<non-empty-string>,
+ *     disableOnAttributes: list<non-empty-string>,
+ *     disableOnNumbers: bool
  * }
  *
  * @phpstan-type EmbeddedParams array<non-empty-string, array{
- *          source: string,
- *          url: string,
- *          apiKey: string,
- *          model: string,
- *          documentTemplate: string,
- *          documentTemplateMaxBytes: int,
- *          dimensions: int,
- *          revision: string,
- *          distribution: array{
- *              mean: float,
- *              sigma: float
- *          },
- *          request: array<array-key, mixed>,
- *          response: array<array-key, mixed>,
- *          headers: array<array-key, mixed>,
- *          binaryQuantized: bool
- *      }
- *  >
+ *     source: string,
+ *     url: string,
+ *     apiKey: string,
+ *     model: string,
+ *     documentTemplate: string,
+ *     documentTemplateMaxBytes: int,
+ *     dimensions: int,
+ *     revision: string,
+ *     distribution: array{
+ *         mean: float,
+ *         sigma: float
+ *     },
+ *     request: array<array-key, mixed>,
+ *     response: array<array-key, mixed>,
+ *     headers: array<array-key, mixed>,
+ *     binaryQuantized: bool
+ * }>
  */
 class IndexSettings extends Model
 {

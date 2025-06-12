@@ -2,7 +2,7 @@
 	"name": "fostercommerce/meilisearch-connect",
 	"type": "craft-plugin",
 	"license": "proprietary",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"support": {
 		"email": "support@fostercommerce.com",
 		"issues": "https://github.com/fostercommerce/meilisearch-connect/issues?state=open",
