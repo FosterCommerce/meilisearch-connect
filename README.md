@@ -124,6 +124,20 @@ The element query can be any implementation of `ElementQuery`.
 
 The transform function receives items from the result of the query and must return an associative array. If the transform function returns a [falsey](https://www.php.net/manual/en/function.empty.php) value, then the item will be skipped from indexing.
 
+It is possible to return multiple documents for each item returned by the query. To do this, return an array of associative arrays from the transform function, instead of a single associative array. For example:
+
+```php
+->withElementQuery(
+	Product::find()->site($siteHandle),
+	static function (Entry $entry): array {
+		return [
+			['id' => $entry->id . '_a'], // Document 1
+			['id' => $entry->id . '_b'], // Document 2
+		];
+	}
+)
+```
+
 Set the `pageSize` using `withPagesSize` to configure how many elements should be indexed at a time when synchronizing an entire index.
 
 #### Custom data
