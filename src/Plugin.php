@@ -16,6 +16,7 @@ use craft\web\twig\variables\CraftVariable;
 use fostercommerce\meilisearch\jobs\Delete as DeleteJob;
 use fostercommerce\meilisearch\jobs\Sync as SyncJob;
 use fostercommerce\meilisearch\models\Index;
+use fostercommerce\meilisearch\models\IndexSettings;
 use fostercommerce\meilisearch\models\Settings;
 use fostercommerce\meilisearch\services\Search;
 use fostercommerce\meilisearch\services\Sync;
@@ -94,11 +95,45 @@ class Plugin extends BasePlugin
 								]));
 							}
 						} elseif ($query->status(null)->id($sender->id)->exists()) {
-							Queue::push(new DeleteJob([
-								'indexHandle' => $index->handle,
-								'identifier' => $sender->id,
-							]));
+							// Otherwise we should delete the element from the index
+							// If the site ID is set in the query, then we should ensure that the sender is from the same site.
+							if ($query->siteId !== null && $query->siteId !== $sender->siteId) {
+								return;
+							}
+
+							$items = collect($index->execFetchFn($sender->id))->flatten(1);
+							foreach ($items as $item) {
+								Queue::push(new DeleteJob([
+									'indexHandle' => $index->handle,
+									'identifier' => $item[$index->getSettings()->primaryKey ?? IndexSettings::DEFAULT_PRIMARY_KEY],
+								]));
+							}
 						}
+					});
+				}
+			);
+
+			static $deletedElementIds = [];
+
+			Event::on(
+				Element::class,
+				Element::EVENT_BEFORE_DELETE,
+				static function (Event $event) use ($autoSyncIndices, &$deletedElementIds): void {
+					/** @var Element $sender */
+					$sender = $event->sender;
+
+					if (ElementHelper::isDraft($sender) || ElementHelper::isRevision($sender)) {
+						return;
+					}
+
+					$autoSyncIndices->each(function (Index $index) use ($sender, &$deletedElementIds): void {
+						// Add the ID from specified in the transform function to the deletedElementIds array.
+						collect($index->execFetchFn($sender->id))
+							->flatten(1) // It's possible to have multiple documents per item, and we need to be able to delete them too.
+							->pluck($index->getSettings()->primaryKey ?? IndexSettings::DEFAULT_PRIMARY_KEY)
+							->each(static function ($item) use ($index, &$deletedElementIds): void {
+								$deletedElementIds[$index->handle][] = $item;
+							});
 					});
 				}
 			);
@@ -106,17 +141,15 @@ class Plugin extends BasePlugin
 			Event::on(
 				Element::class,
 				Element::EVENT_AFTER_DELETE,
-				static function (Event $event) use ($autoSyncIndices): void {
-					/** @var Element $sender */
-					$sender = $event->sender;
-					$autoSyncIndices->each(static function (Index $index) use ($sender): void {
-						/** @var ElementQuery<array-key, Element> $query */
-						$query = $index->query;
-						if ($query->status(null)->id($sender->id)->exists()) {
-							Queue::push(new DeleteJob([
-								'indexHandle' => $index->handle,
-								'identifier' => $sender->id,
-							]));
+				static function (Event $event) use ($autoSyncIndices, &$deletedElementIds): void {
+					$autoSyncIndices->each(static function (Index $index) use (&$deletedElementIds): void {
+						if (array_key_exists($index->handle, $deletedElementIds)) {
+							foreach ($deletedElementIds[$index->handle] as $id) {
+								Queue::push(new DeleteJob([
+									'indexHandle' => $index->handle,
+									'identifier' => $id,
+								]));
+							}
 						}
 					});
 				}

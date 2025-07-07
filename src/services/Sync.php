@@ -173,21 +173,6 @@ class Sync extends Component
 		foreach ($index->execFetchFn($identifier) as $chunk) {
 			$size = count($chunk);
 
-			// Flatten the chunk of data so that multiple documents are supported
-			$chunk = collect($chunk)
-				->flatMap(static function ($item): array {
-					$item ??= [];
-
-					if (array_is_list($item)) {
-						return $item;
-					}
-
-					return [$item];
-				})
-				->filter() // Filter out any falsy values
-				->values() // Re-index the array
-				->toArray();
-
 			$this->meiliClient
 				->index($index->indexId)
 				->addDocuments($chunk, $index->getSettings()->primaryKey);

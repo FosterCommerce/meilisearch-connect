@@ -195,12 +195,37 @@ class Index extends Model
 
 		if ($result instanceof Generator) {
 			foreach ($result as $chunk) {
-				yield $chunk;
+				yield $this->flatten($chunk);
 			}
 		} elseif (is_array($result)) {
-			yield $result;
+			yield $this->flatten($result);
 		} else {
 			throw new \RuntimeException('Invalid return value from fetch function');
 		}
+	}
+
+	/**
+	 * @param FetchResult $chunk
+	 * @return DocumentList
+	 */
+	private function flatten(?array $chunk): array
+	{
+		// Flatten the chunk of data so that multiple documents are supported
+		/** @var DocumentList $flattened */
+		$flattened = collect($chunk)
+			->flatMap(static function ($item): array {
+				$item ??= [];
+
+				if (array_is_list($item)) {
+					return $item;
+				}
+
+				return [$item];
+			})
+			->filter() // Filter out any falsy values
+			->values()
+			->toArray();
+
+		return $flattened;
 	}
 }
