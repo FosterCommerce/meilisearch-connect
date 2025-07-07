@@ -10,7 +10,9 @@ use craft\elements\Entry;
 use Generator;
 
 /**
- * @phpstan-type FetchResult array<int, array<non-empty-string, mixed>>
+ * @phpstan-type Document array<non-empty-string, mixed>
+ * @phpstan-type DocumentList array<int, Document>
+ * @phpstan-type FetchResult array<int, null|Document|DocumentList>
  * @phpstan-type FetchCallableReturn Generator<int, FetchResult>|FetchResult
  */
 class Index extends Model
