@@ -80,11 +80,13 @@ class IndexBuilder
 	 * Configures the pages and fetch callables based on an element query and a transformer callable.
 	 *
 	 * If transform callable returns `false` or a falsey value, then the item will not be indexed.
+	 *
+	 * @param ElementQueryInterface|callable(): ElementQueryInterface $query Element query or callable that returns an element query
 	 */
-	public function withElementQuery(ElementQueryInterface $query, callable $transformer): self
+	public function withElementQuery(ElementQueryInterface|callable $query, callable $transformer): self
 	{
-		if (! $query instanceof ElementQuery) {
-			throw new \RuntimeException('Query must be instance of ' . ElementQuery::class);
+		if (! $query instanceof ElementQuery && ! is_callable($query)) {
+			throw new \RuntimeException('Query must be instance of ' . ElementQuery::class . ' or a callable that returns an instance of ' . ElementQuery::class);
 		}
 
 		['query' => $query, 'fetch' => $fetch] = Fetch::propertiesFromElementQuery($query, $transformer);

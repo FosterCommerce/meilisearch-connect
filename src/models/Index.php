@@ -46,7 +46,7 @@ class Index extends Model
 	/**
 	 * Optional query.
 	 *
-	 * If it's an {@see ElementQuery}, it can automatically be used to fetch the page count.
+	 * If it's an {@see ElementQuery} or a callable that returns an {@see ElementQuery}, it can automatically be used to fetch the page count.
 	 */
 	public mixed $query = null;
 
@@ -165,9 +165,14 @@ class Index extends Model
 
 	public function getPageCount(): ?int
 	{
-		if ($this->query instanceof ElementQueryInterface) {
+		$query = $this->query;
+		if (is_callable($query)) {
+			$query = $query();
+		}
+
+		if ($query instanceof ElementQueryInterface) {
 			/** @var int $count */
-			$count = $this->query->count();
+			$count = $query->count();
 			return (int) ceil($count / ($this->pageSize ?? self::DEFAULT_PAGE_SIZE));
 		}
 

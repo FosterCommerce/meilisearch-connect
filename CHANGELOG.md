@@ -1,5 +1,8 @@
 # Release Notes for Meilisearch Connect
 
+## 1.1.0 - 2025-07-09
+- Added support for element queries to be passed as callables
+
 ## 1.0.2 - 2025-07-07
 - Added support for indexing multiple documents per item (thanks [bramnjissen](https://github.com/bramnijssen))
 - Fixed a bug where the element ID was being used to delete a document instead of the indexed primary key

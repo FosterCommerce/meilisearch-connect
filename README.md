@@ -120,7 +120,9 @@ If you're planning on indexing elements, such as Entry's, you can make use of th
 
 This method takes an element query, and a transform function.
 
-The element query can be any implementation of `ElementQuery`. 
+The element query can be any implementation of `ElementQuery` or a callable that returns an instance of `ElementQuery`.
+
+It is preferred to use a callable to prevent any possibility of running a query immediately when parsing the config. For example when passing a site handle to the `site` filter, Craft will run a query to fetch the site's ID immediately. This can trigger the warning "Element query executed before Craft is fully initialized." 
 
 The transform function receives items from the result of the query and must return an associative array. If the transform function returns a [falsey](https://www.php.net/manual/en/function.empty.php) value, then the item will be skipped from indexing.
 
@@ -128,7 +130,7 @@ It is possible to return multiple documents for each item returned by the query.
 
 ```php
 ->withElementQuery(
-	Product::find()->site($siteHandle),
+	static fn (): ProductQuery => Product::find()->site($siteHandle),
 	static function (Entry $entry): array {
 		return [
 			['id' => $entry->id . '_a'], // Document 1
@@ -181,7 +183,7 @@ return [
 				->build()
 		)
 			->withElementQuery(
-				Entry::find(), // Get all entries
+				static fn (): EntryQuery => Entry::find(), // Get all entries
 				static fn (Entry $entry): array => [
 					// Transform the entry
 					'id' => $entry->id,

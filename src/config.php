@@ -1,5 +1,6 @@
 <?php
 
+use craft\elements\db\EntryQuery;
 use craft\elements\Entry;
 use fostercommerce\meilisearch\builders\IndexBuilder;
 use fostercommerce\meilisearch\builders\IndexSettingsBuilder;
@@ -68,7 +69,8 @@ return [
 			// Set your element/entry query and include a transform function which will be applied to every
 			// item in the query.
 			->withElementQuery(
-				Entry::find(), // Get all entries
+				// Alternatively, you can pass the query in directly, but some filters, such as `site()` can run a query immediately which might cause issues when parsing config.
+				static fn (): EntryQuery => Entry::find(), // Get all entries
 				// Return false from this transform function to prevent this item from being indexed.
 				static fn (Entry $entry): array => [
 					// Transform the entry
@@ -76,7 +78,7 @@ return [
 					'title' => $entry->title,
 					'section' => $entry->section->handle ?? '',
 					'url' => $entry->getUrl(),
-					// Any other fields you want to index
+					// Any other fields you would like to index
 				]
 			)
 			// Turn the configuration into an array that Craft can use to configure the plugin.
