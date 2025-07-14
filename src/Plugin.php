@@ -156,6 +156,33 @@ class Plugin extends BasePlugin
 			);
 		}
 
+		$applyToCpQueryIndices = collect($settings->indices)
+			->filter(static fn (Index $index): bool => $index->applyToCpQuery);
+
+		if ($applyToCpQueryIndices->isNotEmpty()) {
+			Event::on(
+				ElementQuery::class,
+				ElementQuery::EVENT_BEFORE_PREPARE,
+				function (Event $event) use ($applyToCpQueryIndices): void {
+					if (!Craft::$app->getRequest()->getIsCpRequest()) {
+						return;
+					}
+
+					/** @var ElementQuery $query */
+					$query = $event->sender;
+
+					$applyToCpQueryIndices->each(static function (Index $index) use ($query): void {
+						if ($query->search) {
+							$result = $this->search->search($index->handle, $query->search);
+
+							$query->id(array_column($result->getHits(), 'id'));
+							$query->status(null);
+						}
+					});
+				}
+			);
+		}
+
 		/** @var string $craftVersion */
 		$craftVersion = Craft::$app->getVersion();
 

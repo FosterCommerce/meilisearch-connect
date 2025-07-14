@@ -28,6 +28,8 @@ class IndexBuilder
 	 */
 	private array $activeStatuses = [Element::STATUS_ENABLED, Entry::STATUS_LIVE];
 
+	private bool $applyToCpQuery = false;
+
 	/**
 	 * @var ?callable
 	 */
@@ -115,6 +117,12 @@ class IndexBuilder
 	public function withActiveStatuses(array $statuses = [Element::STATUS_ENABLED, Entry::STATUS_LIVE]): self
 	{
 		$this->activeStatuses = $statuses;
+		return $this;
+	}
+
+	public function withApplyToCpQuery(bool $enabled = false): self
+	{
+		$this->applyToCpQuery = $enabled;
 		return $this;
 	}
 
