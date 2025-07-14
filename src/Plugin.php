@@ -7,6 +7,7 @@ use craft\base\Element;
 use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
 use craft\elements\db\ElementQuery;
+use craft\elements\db\ElementQueryInterface;
 use craft\events\ModelEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\helpers\ElementHelper;
@@ -172,7 +173,16 @@ class Plugin extends BasePlugin
 					$query = $event->sender;
 
 					$applyToCpQueryIndices->each(static function (Index $index) use ($query): void {
-						if ($query->elementType === $index->query->elementType && $query->search && is_string($query->search)) {
+						$indexQuery = $index->query;
+						if (is_callable($indexQuery)) {
+							$indexQuery = $indexQuery();
+						}
+
+						if ($indexQuery instanceof ElementQueryInterface
+							&& $query->elementType === $indexQuery->elementType
+							&& $query->search
+							&& is_string($query->search)
+						) {
 							$result = Plugin::getInstance()->search->search($index->handle, $query->search);
 
 							$query->id(array_column($result->getHits(), 'id'));
