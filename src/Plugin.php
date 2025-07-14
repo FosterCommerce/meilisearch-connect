@@ -164,16 +164,16 @@ class Plugin extends BasePlugin
 				ElementQuery::class,
 				ElementQuery::EVENT_BEFORE_PREPARE,
 				function (Event $event) use ($applyToCpQueryIndices): void {
-					if (!Craft::$app->getRequest()->getIsCpRequest()) {
+					if (! Craft::$app->getRequest()->getIsCpRequest()) {
 						return;
 					}
 
-					/** @var ElementQuery $query */
+					/** @var ElementQuery<array-key, Element> $query */
 					$query = $event->sender;
 
 					$applyToCpQueryIndices->each(static function (Index $index) use ($query): void {
-						if ($query->search) {
-							$result = $this->search->search($index->handle, $query->search);
+						if ($query->search && is_string($query->search)) {
+							$result = Plugin::getInstance()->search->search($index->handle, $query->search);
 
 							$query->id(array_column($result->getHits(), 'id'));
 							$query->status(null);
