@@ -189,6 +189,7 @@ class IndexBuilder
 			'query' => $this->query,
 			'autoSync' => $this->autoSync,
 			'activeStatuses' => $this->activeStatuses,
+			'applyToCpQuery' => $this->applyToCpQuery,
 			'pages' => $this->pagesFn,
 			'fetch' => $this->fetchFn,
 		];
