@@ -172,7 +172,7 @@ class Plugin extends BasePlugin
 					$query = $event->sender;
 
 					$applyToCpQueryIndices->each(static function (Index $index) use ($query): void {
-						if ($query->search && is_string($query->search)) {
+						if ($query->elementType === $index->query->elementType && $query->search && is_string($query->search)) {
 							$result = Plugin::getInstance()->search->search($index->handle, $query->search);
 
 							$query->id(array_column($result->getHits(), 'id'));
