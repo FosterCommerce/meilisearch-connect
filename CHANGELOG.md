@@ -1,5 +1,8 @@
 # Release Notes for Meilisearch Connect
 
+## 1.1.1 - 2025-07-16
+- Fixed a bug where a query callable wouldn't resolve correctly when an element was saved
+
 ## 1.1.0 - 2025-07-09
 - Added support for element queries to be passed as callables
 

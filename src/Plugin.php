@@ -66,15 +66,12 @@ class Plugin extends BasePlugin
 
 		$settings = $this->getSettings();
 
-		// List only indices which have been configured with an ElementQuery $query, and have $autoSync set to true.
-		$autoSyncIndices = collect($settings->indices)
-			->filter(static fn (Index $index): bool => $index->query instanceof ElementQuery && $index->autoSync);
-
-		if ($autoSyncIndices->isNotEmpty()) {
+		$indexes = collect($settings->indices);
+		if ($indexes->isNotEmpty()) {
 			Event::on(
 				Element::class,
 				Element::EVENT_AFTER_SAVE,
-				static function (ModelEvent $event) use ($autoSyncIndices): void {
+				static function (ModelEvent $event) use ($indexes): void {
 					/** @var Element $sender */
 					$sender = $event->sender;
 
@@ -83,9 +80,17 @@ class Plugin extends BasePlugin
 						return;
 					}
 
-					$autoSyncIndices->each(static function (Index $index) use ($sender): void {
-						/** @var ElementQuery<array-key, Element> $query */
+					$indexes->each(static function (Index $index) use ($sender): void {
 						$query = $index->query;
+
+						if (is_callable($query)) {
+							$query = $query();
+						}
+
+						if (! $query instanceof ElementQuery) {
+							return;
+						}
+
 						if (in_array($sender->getStatus(), $index->activeStatuses, true)) {
 							// If an element is active, then we should update it in the index
 							if ($query->id($sender->id)->exists()) {
@@ -118,7 +123,7 @@ class Plugin extends BasePlugin
 			Event::on(
 				Element::class,
 				Element::EVENT_BEFORE_DELETE,
-				static function (Event $event) use ($autoSyncIndices, &$deletedElementIds): void {
+				static function (Event $event) use ($indexes, &$deletedElementIds): void {
 					/** @var Element $sender */
 					$sender = $event->sender;
 
@@ -126,7 +131,7 @@ class Plugin extends BasePlugin
 						return;
 					}
 
-					$autoSyncIndices->each(function (Index $index) use ($sender, &$deletedElementIds): void {
+					$indexes->each(function (Index $index) use ($sender, &$deletedElementIds): void {
 						// Add the ID from specified in the transform function to the deletedElementIds array.
 						collect($index->execFetchFn($sender->id))
 							->flatten(1) // It's possible to have multiple documents per item, and we need to be able to delete them too.
@@ -141,8 +146,8 @@ class Plugin extends BasePlugin
 			Event::on(
 				Element::class,
 				Element::EVENT_AFTER_DELETE,
-				static function (Event $event) use ($autoSyncIndices, &$deletedElementIds): void {
-					$autoSyncIndices->each(static function (Index $index) use (&$deletedElementIds): void {
+				static function (Event $event) use ($indexes, &$deletedElementIds): void {
+					$indexes->each(static function (Index $index) use (&$deletedElementIds): void {
 						if (array_key_exists($index->handle, $deletedElementIds)) {
 							foreach ($deletedElementIds[$index->handle] as $id) {
 								Queue::push(new DeleteJob([
