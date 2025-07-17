@@ -7,6 +7,7 @@ use craft\base\Element;
 use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
 use craft\elements\db\ElementQuery;
+use craft\elements\db\ElementQueryInterface;
 use craft\events\ModelEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\helpers\ElementHelper;
@@ -155,6 +156,42 @@ class Plugin extends BasePlugin
 									'identifier' => $id,
 								]));
 							}
+						}
+					});
+				}
+			);
+		}
+
+		$applyToCpQueryIndices = collect($settings->indices)
+			->filter(static fn (Index $index): bool => $index->applyToCpQuery);
+
+		if ($applyToCpQueryIndices->isNotEmpty()) {
+			Event::on(
+				ElementQuery::class,
+				ElementQuery::EVENT_BEFORE_PREPARE,
+				function (Event $event) use ($applyToCpQueryIndices): void {
+					if (! Craft::$app->getRequest()->getIsCpRequest()) {
+						return;
+					}
+
+					/** @var ElementQuery<array-key, Element> $query */
+					$query = $event->sender;
+
+					$applyToCpQueryIndices->each(static function (Index $index) use ($query): void {
+						$indexQuery = $index->query;
+						if (is_callable($indexQuery)) {
+							$indexQuery = $indexQuery();
+						}
+
+						if ($indexQuery instanceof ElementQueryInterface
+							&& $query->elementType === $indexQuery->elementType
+							&& $query->search
+							&& is_string($query->search)
+						) {
+							$result = Plugin::getInstance()->search->search($index->handle, $query->search);
+
+							$query->id(array_column($result->getHits(), 'id'));
+							$query->status(null);
 						}
 					});
 				}

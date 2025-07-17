@@ -28,6 +28,8 @@ class IndexBuilder
 	 */
 	private array $activeStatuses = [Element::STATUS_ENABLED, Entry::STATUS_LIVE];
 
+	private bool $applyToCpQuery = false;
+
 	/**
 	 * @var ?callable
 	 */
@@ -118,6 +120,12 @@ class IndexBuilder
 		return $this;
 	}
 
+	public function withApplyToCpQuery(bool $enabled = false): self
+	{
+		$this->applyToCpQuery = $enabled;
+		return $this;
+	}
+
 	/**
 	 * Set the callable that is used by the plugin when reporting progress on synchronization tasks.
 	 *
@@ -181,6 +189,7 @@ class IndexBuilder
 			'query' => $this->query,
 			'autoSync' => $this->autoSync,
 			'activeStatuses' => $this->activeStatuses,
+			'applyToCpQuery' => $this->applyToCpQuery,
 			'pages' => $this->pagesFn,
 			'fetch' => $this->fetchFn,
 		];

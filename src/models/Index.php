@@ -65,6 +65,13 @@ class Index extends Model
 	public array $activeStatuses = [Element::STATUS_ENABLED, Entry::STATUS_LIVE];
 
 	/**
+	 * Optionally use index for determining results of search query in control panel.
+	 *
+	 * When using auto-sync, note that the results only contain elements with an active status ({@see $activeStatuses}).
+	 */
+	public bool $applyToCpQuery = false;
+
+	/**
 	 * An optional callable that is used by the plugin when reporting progress on synchronization tasks.
 	 *
 	 * Example:
