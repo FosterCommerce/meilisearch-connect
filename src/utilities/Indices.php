@@ -5,6 +5,7 @@ namespace fostercommerce\meilisearch\utilities;
 use Craft;
 use craft\base\Utility;
 use fostercommerce\meilisearch\Plugin;
+use Meilisearch\Exceptions\ApiException;
 
 /**
  * Indices utility
@@ -33,11 +34,22 @@ class Indices extends Utility
 		$indices = [];
 
 		foreach ($plugin->getSettings()->indices as $handle => $index) {
-			$documentCount = $plugin->sync->getDocumentCount($index);
+			try {
+				$documentCount = $plugin->sync->getDocumentCount($index);
+			} catch (ApiException $e) {
+				$documentCount = 0;
+
+				if ($e->errorCode === 'index_not_found') {
+					$message = "{$e->getMessage()} Syncing the index settings should resolve this.";
+				} else {
+					$message = $e->getMessage();
+				}
+			}
 
 			$indices[$handle] = [
 				'indexId' => $index->indexId,
 				'documentCount' => $documentCount,
+				'message' => $message ?? null,
 			];
 		}
 

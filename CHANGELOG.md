@@ -1,5 +1,8 @@
 # Release Notes for Meilisearch Connect
 
+## 1.1.2 - 2025-07-17
+- Added an error message to the indices utility when an index is not found or any other `ApiException` is thrown
+
 ## 1.1.1 - 2025-07-16
 - Fixed a bug where a query callable wouldn't resolve correctly when an element was saved
 

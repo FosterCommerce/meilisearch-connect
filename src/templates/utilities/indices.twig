@@ -26,7 +26,16 @@
 	<div style="margin-bottom: 2rem">
 		<h2>Handle: {{ handle }}</h2>
 		<p>Index ID: <strong>{{ index.indexId }}</strong></p>
-		<p>Document count: <strong>{{ index.documentCount }}</strong></p>
+		<p>
+			Document count: <strong>{{ index.documentCount }}</strong>
+		</p>
+		{% if index.message %}
+			<div class="readable">
+				<blockquote class="note error">
+					<p>{{ index.message }}</p>
+				</blockquote>
+			</div>
+		{% endif %}
 		<div class="buttons">
 			<form class="utility" method="post" accept-charset="UTF-8">
 				{{ csrfInput() }}
@@ -54,5 +63,4 @@
 			</form>
 		</div>
 	</div>
-
 {% endfor %}
