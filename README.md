@@ -332,3 +332,34 @@ A UI has been provided to allow quick and easy access to controls for syncing an
 
 ![Meilisearch Connect control panel utility](resources/img/cputility.png)
 
+### Events
+
+#### `Sync::EVENT_BEFORE_SYNC_CHUNK`
+
+This event is triggered before a chunk of data is synced to Meilisearch. Data can be modified here before it is synced to Meilisearch.
+
+```php
+Event::on(
+	Sync::class,
+	Sync::EVENT_BEFORE_SYNC_CHUNK,
+	static function (SyncEvent $event) {
+		// Do something with $event->chunk before it's synced.
+	}
+);
+```
+
+#### `Sync::EVENT_AFTER_SYNC_CHUNK`
+
+This event is triggered after a chunk of data is synced to Meilisearch.
+
+```php
+
+Event::on(
+	Sync::class,
+	Sync::EVENT_AFTER_SYNC_CHUNK,
+	static function (SyncEvent $event) {
+		// Do something with $event->chunk after it's synced.
+	}
+);
+```
+

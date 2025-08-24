@@ -1,5 +1,8 @@
 # Release Notes for Meilisearch Connect
 
+# 1.1.3 - 2025-08-24
+- Added support for events to be triggered before and after data is synced to Meilisearch
+
 ## 1.1.2 - 2025-07-17
 - Added an error message to the indices utility when an index is not found or any other `ApiException` is thrown
 

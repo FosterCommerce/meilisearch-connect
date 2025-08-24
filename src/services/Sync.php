@@ -3,6 +3,7 @@
 namespace fostercommerce\meilisearch\services;
 
 use Craft;
+use fostercommerce\meilisearch\events\SyncEvent;
 use fostercommerce\meilisearch\models\Index;
 use Generator;
 use Meilisearch\Exceptions\TimeOutException;
@@ -12,6 +13,33 @@ use yii\base\Exception;
 class Sync extends Component
 {
 	use Meili;
+
+	/**
+	 * Event::on(
+	 *   Sync::class,
+	 *   Sync::EVENT_BEFORE_SYNC_CHUNK,
+	 *   function (SyncEvent $event) {
+	 *       // Do something with the chunk before it's synced.
+	 *       // $event->chunk = ;
+	 *   }
+	 * );
+	 *
+	 * @var string
+	 */
+	public const EVENT_BEFORE_SYNC_CHUNK = 'beforeSyncChunk';
+
+	/**
+	 * Event::on(
+	 *   Sync::class,
+	 *   Sync::EVENT_AFTER_SYNC_CHUNK,
+	 *   function (SyncEvent $event) {
+	 *       // Do something with the chunk after it's synced.
+	 *   }
+	 * );
+	 *
+	 * @var string
+	 */
+	public const EVENT_AFTER_SYNC_CHUNK = 'afterSyncChunk';
 
 	public function init(): void
 	{
@@ -171,11 +199,25 @@ class Sync extends Component
 	public function sync(Index $index, null|string|int $identifier): Generator
 	{
 		foreach ($index->execFetchFn($identifier) as $chunk) {
+			$event = new SyncEvent([
+				'chunk' => $chunk,
+			]);
+
+			if ($this->hasEventHandlers(self::EVENT_BEFORE_SYNC_CHUNK)) {
+				$this->trigger(self::EVENT_BEFORE_SYNC_CHUNK, $event);
+			}
+
+			$chunk = $event->chunk;
+
 			$size = count($chunk);
 
 			$this->meiliClient
 				->index($index->indexId)
 				->addDocuments($chunk, $index->getSettings()->primaryKey);
+
+			if ($this->hasEventHandlers(self::EVENT_AFTER_SYNC_CHUNK)) {
+				$this->trigger(self::EVENT_AFTER_SYNC_CHUNK, $event);
+			}
 
 			yield $size;
 		}
