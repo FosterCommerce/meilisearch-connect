@@ -69,7 +69,7 @@ class Index extends Model
 	 *
 	 * Example:
 	 *
-	 * ```php
+	 * ```
 	 * static function (Index $index): int {
 	 *   return ceil(Entry::find()->count() / ($index->pageSize ?? 100));
 	 * }
@@ -94,8 +94,8 @@ class Index extends Model
 	 *
 	 * Example of a callable that returns an array:
 	 *
-	 * ```php
-	 * static function (Index $index, ?int $id): array {
+	 * ```
+	 * static function (Index $index, ?int $id, mixed $extra): array {
 	 *   return collect(Entry::find()->all())
 	 *     ->map(static fn ($entry) => [
 	 *       'id' => $entry->id,
@@ -109,7 +109,7 @@ class Index extends Model
 	 *
 	 * If this callable returns `false` or a falsey value, then the item will not be indexed.
 	 *
-	 * @var ?callable(Index, null|string|int): FetchCallableReturn
+	 * @var ?callable(Index, null|string|int, mixed): FetchCallableReturn
 	 */
 	private $fetch;
 
@@ -138,7 +138,7 @@ class Index extends Model
 	}
 
 	/**
-	 * @param ?callable(Index, null|string|int): FetchCallableReturn $fetch
+	 * @param ?callable(Index, null|string|int, mixed): FetchCallableReturn $fetch
 	 */
 	public function setFetch(?callable $fetch): void
 	{
@@ -186,9 +186,10 @@ class Index extends Model
 	}
 
 	/**
+	 * @param mixed $extra Additional data to pass to the fetch function
 	 * @return Generator<int, FetchResult>
 	 */
-	public function execFetchFn(null|string|int $identifier = null): Generator
+	public function execFetchFn(null|string|int $identifier = null, mixed $extra = null): Generator
 	{
 		$fetchFn = $this->fetch;
 
@@ -196,7 +197,7 @@ class Index extends Model
 			throw new \RuntimeException('Fetch callable is not configured correctly');
 		}
 
-		$result = $fetchFn($this, $identifier);
+		$result = $fetchFn($this, $identifier, $extra);
 
 		if ($result instanceof Generator) {
 			foreach ($result as $chunk) {
