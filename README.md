@@ -246,13 +246,13 @@ Event::on(
 				// If an entry is live, then we can add it to the index
 				Queue::push(new SyncJob([
 					'indexName' => 'pages',
-					'identifier' => $item->id,
+					'sourceId' => $item->id,
 				]));
 			} else {
 				// Otherwise, we should make sure that it is not in the index
 				Queue::push(new DeleteJob([
 					'indexName' => 'pages',
-					'identifier' => $item->id,
+					'sourceId' => $item->id,
 				]));
 			}
 		}
@@ -269,7 +269,7 @@ Event::on(
 	static function (\craft\events\Event $event) {
 		$item = $event->sender;
 		Queue::push(new DeleteJob([
-			'identifier' => $item->id,
+			'sourceId' => $item->id,
 		]));
 	}
 );
