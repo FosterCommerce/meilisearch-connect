@@ -4,7 +4,11 @@ namespace fostercommerce\meilisearch\services;
 
 use Craft;
 use fostercommerce\meilisearch\events\SyncEvent;
+use fostercommerce\meilisearch\helpers\DocumentList;
 use fostercommerce\meilisearch\models\Index;
+use fostercommerce\meilisearch\records\Source;
+use fostercommerce\meilisearch\records\SourceDependency;
+use fostercommerce\meilisearch\records\TrackedDocument;
 use Generator;
 use Meilisearch\Exceptions\TimeOutException;
 use yii\base\Component;
@@ -19,8 +23,8 @@ class Sync extends Component
 	 *   Sync::class,
 	 *   Sync::EVENT_BEFORE_SYNC_CHUNK,
 	 *   function (SyncEvent $event) {
-	 *       // Do something with the chunk before it's synced.
-	 *       // $event->chunk = ;
+	 *       // Do something with the document list before it's synced.
+	 *       // $event->documentList->documents = ;
 	 *   }
 	 * );
 	 *
@@ -33,7 +37,7 @@ class Sync extends Component
 	 *   Sync::class,
 	 *   Sync::EVENT_AFTER_SYNC_CHUNK,
 	 *   function (SyncEvent $event) {
-	 *       // Do something with the chunk after it's synced.
+	 *       // Do something with $event->documentList after it's synced.
 	 *   }
 	 * );
 	 *
@@ -182,44 +186,140 @@ class Sync extends Component
 
 	public function flush(Index $index): void
 	{
-		$this->meiliClient
-			->index($index->indexId)
-			->deleteAllDocuments();
+		Source::getDb()->transaction(function () use (&$index): void {
+			$this->meiliClient
+				->index($index->indexId)
+				->deleteAllDocuments();
+
+			Source::deleteAll([
+				'indexHandle' => $index->handle,
+			]);
+		});
 	}
 
-	public function delete(Index $index, string|int $identifier): void
+	public function delete(Index $index, string $sourceHandle): void
 	{
-		$this->meiliClient->index($index->indexId)->deleteDocument($identifier);
+		Source::getDb()->transaction(function () use (&$sourceHandle, &$index): void {
+			$source = Source::findOne([
+				'indexHandle' => $index->handle,
+				'handle' => $sourceHandle,
+			]);
+
+			if ($source === null) {
+				return;
+			}
+
+			/** @var TrackedDocument $batchQueryResult */
+			foreach ($source->getTrackedDocuments()->each() as $batchQueryResult) {
+				$this->meiliClient->index($index->indexId)->deleteDocument($batchQueryResult->documentId);
+			}
+
+			$source->delete();
+		});
 	}
 
 	/**
-	 * @param string|int|null $identifier The value used to identify a single item in the index
-	 * @return Generator<int, int>
+	 * @param null|string $sourceHandle The value used to identify a single item in the index
+	 * @return Generator<int>
 	 */
-	public function sync(Index $index, null|string|int $identifier): Generator
+	public function sync(Index $index, null|string $sourceHandle): Generator
 	{
-		foreach ($index->execFetchFn($identifier) as $chunk) {
-			$event = new SyncEvent([
-				'chunk' => $chunk,
-			]);
+		$transaction = Source::getDb()->beginTransaction();
 
-			if ($this->hasEventHandlers(self::EVENT_BEFORE_SYNC_CHUNK)) {
-				$this->trigger(self::EVENT_BEFORE_SYNC_CHUNK, $event);
+		try {
+			$discoveredSourceIds = [];
+
+			/** @var DocumentList[] $documentLists */
+			foreach ($index->execFetchFn($sourceHandle) as $documentLists) {
+				$event = new SyncEvent([
+					'documentLists' => $documentLists,
+					'meiliClient' => $this->meiliClient,
+				]);
+
+				if ($this->hasEventHandlers(self::EVENT_BEFORE_SYNC_CHUNK)) {
+					$this->trigger(self::EVENT_BEFORE_SYNC_CHUNK, $event);
+				}
+
+				$documentLists = $event->documentLists;
+				$size = 0;
+				$documentBatches = [];
+
+				foreach ($documentLists as $documentList) {
+					$source = Source::getOrCreate($index->handle, $documentList->sourceHandle);
+
+					// When discovering a new source Entry ID, mark all
+					// existing tracked documents as pending for deletion.
+					if (! in_array($source->id, $discoveredSourceIds, true)) {
+						$discoveredSourceIds[] = $source->id;
+
+						TrackedDocument::updateAll([
+							'pendingDeletion' => true,
+						], [
+							'sourceId' => $source->id,
+						]);
+
+						SourceDependency::deleteAll([
+							'parentSourceId' => $source->id,
+						]);
+					}
+
+					$size += count($documentList->documents);
+					$documentBatches[] = $documentList->documents;
+
+					// Exclude all tracked documents that have been added to/updated in the index
+					// from deletion
+					foreach ($documentList->documents as $document) {
+						$trackedDocumentIdentifier = [
+							'sourceId' => $source->id,
+							'documentId' => $document[$index->getSettings()->primaryKey],
+						];
+
+						$existingTrackedDocument = TrackedDocument::findOne($trackedDocumentIdentifier);
+						if ($existingTrackedDocument !== null) {
+							$existingTrackedDocument->pendingDeletion = false;
+							$existingTrackedDocument->save();
+						} else {
+							(new TrackedDocument($trackedDocumentIdentifier))->save();
+						}
+					}
+
+					foreach ($documentList->dependentSourceHandles as $dependentSourceHandle) {
+						(new SourceDependency([
+							'sourceId' => Source::getOrCreate($index->handle, $dependentSourceHandle)->id,
+							'parentSourceId' => $source->id,
+						]))->save();
+					}
+				}
+
+				$this->meiliClient
+					->index($index->indexId)
+					->addDocuments(array_merge(...$documentBatches), $index->getSettings()->primaryKey);
+
+				yield $size;
+
+				if ($this->hasEventHandlers(self::EVENT_AFTER_SYNC_CHUNK)) {
+					$this->trigger(self::EVENT_AFTER_SYNC_CHUNK, $event);
+				}
 			}
 
-			$chunk = $event->chunk;
+			// Purge documents that should no longer exist
+			$documentsToBeDeletedQuery = TrackedDocument::find()
+				->joinWith('source')
+				->where([
+					'indexHandle' => $index->handle,
+					'pendingDeletion' => true,
+				]);
 
-			$size = count($chunk);
-
-			$this->meiliClient
-				->index($index->indexId)
-				->addDocuments($chunk, $index->getSettings()->primaryKey);
-
-			if ($this->hasEventHandlers(self::EVENT_AFTER_SYNC_CHUNK)) {
-				$this->trigger(self::EVENT_AFTER_SYNC_CHUNK, $event);
+			/** @var TrackedDocument $batchQueryResult */
+			foreach ($documentsToBeDeletedQuery->each() as $batchQueryResult) {
+				$this->meiliClient->index($index->indexId)->deleteDocument($batchQueryResult->documentId);
+				$batchQueryResult->delete();
 			}
 
-			yield $size;
+			$transaction->commit();
+		} catch (\Throwable $throwable) {
+			$transaction->rollBack();
+			throw $throwable;
 		}
 	}
 

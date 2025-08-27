@@ -15,9 +15,7 @@ use craft\services\Utilities;
 use craft\web\twig\variables\CraftVariable;
 use fostercommerce\meilisearch\jobs\Delete as DeleteJob;
 use fostercommerce\meilisearch\jobs\Sync as SyncJob;
-use fostercommerce\meilisearch\models\ElementQueryFetchExtra;
 use fostercommerce\meilisearch\models\Index;
-use fostercommerce\meilisearch\models\IndexSettings;
 use fostercommerce\meilisearch\models\Settings;
 use fostercommerce\meilisearch\services\Search;
 use fostercommerce\meilisearch\services\Sync;
@@ -36,6 +34,8 @@ use yii\base\InvalidConfigException;
  */
 class Plugin extends BasePlugin
 {
+	public string $schemaVersion = '1.8.0';
+
 	/**
 	 * @return array<non-empty-string, mixed>
 	 */
@@ -97,13 +97,10 @@ class Plugin extends BasePlugin
 						}
 
 						if (in_array($sender->getStatus(), $index->activeStatuses, true)) {
-							// If an element is active, then we should update it in the index
-							if ($query->id($sender->id)->exists()) {
-								Queue::push(new SyncJob([
-									'indexHandle' => $index->handle,
-									'identifier' => $sender->id,
-								]));
-							}
+							Queue::push(new SyncJob([
+								'indexHandle' => $index->handle,
+								'sourceHandle' => $sender->id,
+							]));
 						} elseif ($query->status(null)->id($sender->id)->exists()) {
 							// Otherwise we should delete the element from the index
 							// If the site ID is set in the query, then we should ensure that the sender is from the same site.
@@ -111,41 +108,11 @@ class Plugin extends BasePlugin
 								return;
 							}
 
-							$items = collect($index->execFetchFn($sender->id, new ElementQueryFetchExtra([
-								'anyStatus' => true,
-							])))->flatten(1);
-							foreach ($items as $item) {
-								Queue::push(new DeleteJob([
-									'indexHandle' => $index->handle,
-									'identifier' => $item[$index->getSettings()->primaryKey ?? IndexSettings::DEFAULT_PRIMARY_KEY],
-								]));
-							}
+							Queue::push(new DeleteJob([
+								'indexHandle' => $index->handle,
+								'sourceHandle' => $sender->id,
+							]));
 						}
-					});
-				}
-			);
-
-			static $deletedElementIds = [];
-
-			Event::on(
-				Element::class,
-				Element::EVENT_BEFORE_DELETE,
-				static function (Event $event) use ($indexes, &$deletedElementIds): void {
-					/** @var Element $sender */
-					$sender = $event->sender;
-
-					if (ElementHelper::isDraft($sender) || ElementHelper::isRevision($sender)) {
-						return;
-					}
-
-					$indexes->each(function (Index $index) use ($sender, &$deletedElementIds): void {
-						// Add the ID from specified in the transform function to the deletedElementIds array.
-						collect($index->execFetchFn($sender->id))
-							->flatten(1) // It's possible to have multiple documents per item, and we need to be able to delete them too.
-							->pluck($index->getSettings()->primaryKey ?? IndexSettings::DEFAULT_PRIMARY_KEY)
-							->each(static function ($item) use ($index, &$deletedElementIds): void {
-								$deletedElementIds[$index->handle][] = $item;
-							});
 					});
 				}
 			);
@@ -153,16 +120,19 @@ class Plugin extends BasePlugin
 			Event::on(
 				Element::class,
 				Element::EVENT_AFTER_DELETE,
-				static function (Event $event) use ($indexes, &$deletedElementIds): void {
-					$indexes->each(static function (Index $index) use (&$deletedElementIds): void {
-						if (array_key_exists($index->handle, $deletedElementIds)) {
-							foreach ($deletedElementIds[$index->handle] as $id) {
-								Queue::push(new DeleteJob([
-									'indexHandle' => $index->handle,
-									'identifier' => $id,
-								]));
-							}
-						}
+				static function (Event $event) use ($indexes): void {
+					/** @var Element $sender */
+					$sender = $event->sender;
+
+					if (ElementHelper::isDraft($sender) || ElementHelper::isRevision($sender)) {
+						return;
+					}
+
+					$indexes->each(function (Index $index) use (&$sender): void {
+						Queue::push(new DeleteJob([
+							'indexHandle' => $index->handle,
+							'sourceHandle' => $sender->id,
+						]));
 					});
 				}
 			);

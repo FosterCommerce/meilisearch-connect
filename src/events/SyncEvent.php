@@ -3,15 +3,15 @@
 namespace fostercommerce\meilisearch\events;
 
 use craft\base\Event;
-use fostercommerce\meilisearch\models\Index;
+use fostercommerce\meilisearch\helpers\DocumentList;
+use Meilisearch\Client;
 
-/**
- * @phpstan-import-type FetchResult from Index
- */
 class SyncEvent extends Event
 {
 	/**
-	 * @var FetchResult
+	 * @var DocumentList[]
 	 */
-	public $chunk;
+	public array $documentLists;
+
+	public Client $meiliClient;
 }
