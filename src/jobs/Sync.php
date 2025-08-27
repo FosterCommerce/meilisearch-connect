@@ -2,15 +2,25 @@
 
 namespace fostercommerce\meilisearch\jobs;
 
+use craft\helpers\Queue;
 use craft\queue\BaseJob;
 use fostercommerce\meilisearch\models\Index;
 use fostercommerce\meilisearch\Plugin;
+use fostercommerce\meilisearch\records\Source;
 
 class Sync extends BaseJob
 {
+	/**
+	 * Sync jobs will create new sync jobs for dependencies recursively.
+	 * This limit is to prevent spawning sync jobs indefinitely.
+	 */
+	public const MAX_DEPENDENCY_RECURSION_LEVEL = 8;
+
 	public ?string $indexHandle = null;
 
-	public null|string|int $identifier = null;
+	public null|string|int $sourceHandle = null;
+
+	public int $dependencyRecursionLevel = 0;
 
 	/**
 	 * @param array<array-key, mixed> $config
@@ -37,17 +47,51 @@ class Sync extends BaseJob
 		$indices = collect($indices);
 
 		// Only get page count if we're not attempting to synchronize a specific item.
-		$totalPages = $this->identifier === null
+		$totalPages = $this->sourceHandle === null
 			? $indices->reduce(static fn ($total, Index $index): int => $total + ($index->getPageCount() ?? 0), 0)
 			: 0;
 
 		$currentPage = 0;
-		$indices->each(function ($index) use ($queue, $totalPages, &$currentPage): void {
-			foreach (Plugin::getInstance()->sync->sync($index, $this->identifier) as $chunkSize) {
+		$sourceHandleString = $this->sourceHandle === null
+			? null
+			: (string) $this->sourceHandle;
+
+		$indices->each(function (Index $index) use ($sourceHandleString, $queue, $totalPages, &$currentPage): void {
+			foreach (Plugin::getInstance()->sync->sync($index, $sourceHandleString) as $chunkSize) {
 				++$currentPage;
 
 				if ($totalPages > 0) {
 					$this->setProgress($queue, $currentPage / $totalPages);
+				}
+			}
+		});
+
+		// Find dependent sources and sync them too
+		$indices->each(function (Index $index): void {
+			$syncedSourcesQuery = Source::find()
+				->where([
+					'indexHandle' => $index->handle,
+				]);
+
+			if ($this->sourceHandle !== null) {
+				$syncedSourcesQuery->andWhere([
+					'handle' => (string) $this->sourceHandle,
+				]);
+			}
+
+			/** @var Source $batchQueryResult */
+			foreach ($syncedSourcesQuery->each() as $batchQueryResult) {
+				/** @var Source $childSource */
+				foreach ($batchQueryResult->getChildSources()->each() as $childSource) {
+					if ($this->dependencyRecursionLevel === self::MAX_DEPENDENCY_RECURSION_LEVEL) {
+						throw new \RuntimeException('Sync dependency recursion limit of ' . self::MAX_DEPENDENCY_RECURSION_LEVEL . ' levels reached.');
+					}
+
+					Queue::push(new Sync([
+						'indexHandle' => $this->indexHandle,
+						'sourceHandle' => $childSource->handle,
+						'dependencyRecursionLevel' => $this->dependencyRecursionLevel + 1,
+					]));
 				}
 			}
 		});
@@ -57,8 +101,8 @@ class Sync extends BaseJob
 
 	protected function defaultDescription(): ?string
 	{
-		if ($this->identifier !== null) {
-			$description = "Sync {$this->identifier} in";
+		if ($this->sourceHandle !== null) {
+			$description = "Sync {$this->sourceHandle} in";
 			if ($this->indexHandle === null) {
 				return "{$description} all indices";
 			}
