@@ -4,6 +4,7 @@ namespace fostercommerce\meilisearch\helpers;
 
 use craft\base\ElementInterface;
 use craft\elements\db\ElementQueryInterface;
+use fostercommerce\meilisearch\models\ElementQueryFetchExtra;
 use fostercommerce\meilisearch\models\Index;
 use Generator;
 
@@ -12,7 +13,7 @@ use Generator;
  * @template TElement of ElementInterface
  * @phpstan-type TransformerFn callable(TElement): array<non-empty-string, mixed>
  * @phpstan-type PagesFn callable(Index): int
- * @phpstan-type FetchFn callable(Index, null|string|int): Generator<int, array<non-empty-string, mixed>>
+ * @phpstan-type FetchFn callable(Index, null|string|int, mixed): Generator<int, array<non-empty-string, mixed>>
  */
 class Fetch
 {
@@ -38,7 +39,7 @@ class Fetch
 	 */
 	public static function createFetchFn(callable $transformer): callable
 	{
-		return static function (Index $index, null|string|int $identifier) use ($transformer) {
+		return static function (Index $index, null|string|int $identifier, ?ElementQueryFetchExtra $extra = null) use ($transformer) {
 			/** @var TQuery $indexQuery */
 			$indexQuery = $index->query;
 
@@ -47,6 +48,10 @@ class Fetch
 			}
 
 			if ($identifier !== null) {
+				if ($extra?->anyStatus ?? false) {
+					$indexQuery->status(null);
+				}
+
 				$indexQuery->id($identifier);
 			}
 

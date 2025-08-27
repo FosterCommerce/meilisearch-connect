@@ -123,7 +123,7 @@ class IndexBuilder
 	 *
 	 * Example:
 	 *
-	 * ```php
+	 * ```
 	 * static function (Index $index, ?int $pageSize): int {
 	 *   return ceil(Entry::find()->count() / ($pageSize ?? 100));
 	 * }
@@ -148,8 +148,8 @@ class IndexBuilder
 	 *
 	 * Example of a callable that returns an array:
 	 *
-	 * ```php
-	 * static function (Index $index, ?int $id): array {
+	 * ```
+	 * static function (Index $index, ?int $id, mixed $extra): array {
 	 *   return collect(Entry::find()->all())
 	 *     ->map(static fn ($entry) => [
 	 *       'id' => $entry->id,

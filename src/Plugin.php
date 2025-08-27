@@ -15,6 +15,7 @@ use craft\services\Utilities;
 use craft\web\twig\variables\CraftVariable;
 use fostercommerce\meilisearch\jobs\Delete as DeleteJob;
 use fostercommerce\meilisearch\jobs\Sync as SyncJob;
+use fostercommerce\meilisearch\models\ElementQueryFetchExtra;
 use fostercommerce\meilisearch\models\Index;
 use fostercommerce\meilisearch\models\IndexSettings;
 use fostercommerce\meilisearch\models\Settings;
@@ -106,7 +107,9 @@ class Plugin extends BasePlugin
 								return;
 							}
 
-							$items = collect($index->execFetchFn($sender->id))->flatten(1);
+							$items = collect($index->execFetchFn($sender->id, new ElementQueryFetchExtra([
+								'anyStatus' => true,
+							])))->flatten(1);
 							foreach ($items as $item) {
 								Queue::push(new DeleteJob([
 									'indexHandle' => $index->handle,

@@ -1,5 +1,8 @@
 # Release Notes for Meilisearch Connect
 
+# 1.1.4 - 2025-08-27
+- Allow extra options to be passed through to the fetch function
+
 # 1.1.3 - 2025-08-24
 - Added support for events to be triggered before and after data is synced to Meilisearch
 
