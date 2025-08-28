@@ -4,7 +4,9 @@ namespace fostercommerce\meilisearch\services;
 
 use Craft;
 use fostercommerce\meilisearch\events\SyncEvent;
+use fostercommerce\meilisearch\helpers\DocumentList;
 use fostercommerce\meilisearch\models\Index;
+use fostercommerce\meilisearch\records\TrackedDocument;
 use Generator;
 use Meilisearch\Exceptions\TimeOutException;
 use yii\base\Component;
@@ -19,8 +21,8 @@ class Sync extends Component
 	 *   Sync::class,
 	 *   Sync::EVENT_BEFORE_SYNC_CHUNK,
 	 *   function (SyncEvent $event) {
-	 *       // Do something with the chunk before it's synced.
-	 *       // $event->chunk = ;
+	 *       // Do something with the document list before it's synced.
+	 *       // $event->documentList->documents = ;
 	 *   }
 	 * );
 	 *
@@ -33,7 +35,7 @@ class Sync extends Component
 	 *   Sync::class,
 	 *   Sync::EVENT_AFTER_SYNC_CHUNK,
 	 *   function (SyncEvent $event) {
-	 *       // Do something with the chunk after it's synced.
+	 *       // Do something with $event->documentList after it's synced.
 	 *   }
 	 * );
 	 *
@@ -182,44 +184,127 @@ class Sync extends Component
 
 	public function flush(Index $index): void
 	{
-		$this->meiliClient
-			->index($index->indexId)
-			->deleteAllDocuments();
+		$this->runWithIndexMutex($index, function () use (&$index): void {
+			$this->meiliClient
+				->index($index->indexId)
+				->deleteAllDocuments();
+
+			TrackedDocument::deleteAll([
+				'indexHandle' => $index->handle,
+			]);
+		});
 	}
 
-	public function delete(Index $index, string|int $identifier): void
+	public function delete(Index $index, string|int $sourceId): void
 	{
-		$this->meiliClient->index($index->indexId)->deleteDocument($identifier);
+		$this->runWithIndexMutex($index, function () use (&$index, &$sourceId): void {
+			$trackedDocuments = TrackedDocument::findAll([
+				'indexHandle' => $index->handle,
+				'sourceId' => $sourceId,
+			]);
+
+			foreach ($trackedDocuments as $trackedDocument) {
+				$this->meiliClient->index($index->indexId)->deleteDocument($trackedDocument->documentId);
+			}
+
+			TrackedDocument::deleteAll([
+				'indexHandle' => $index->handle,
+				'sourceId' => $sourceId,
+			]);
+		});
 	}
 
 	/**
-	 * @param string|int|null $identifier The value used to identify a single item in the index
+	 * @param string|int|null $sourceId The value used to identify a single item in the index
 	 * @return Generator<int, int>
 	 */
-	public function sync(Index $index, null|string|int $identifier): Generator
+	public function sync(Index $index, null|string|int $sourceId): Generator
 	{
-		foreach ($index->execFetchFn($identifier) as $chunk) {
-			$event = new SyncEvent([
-				'chunk' => $chunk,
+		$generator = $this->runWithIndexMutex($index, function () use (&$index, &$sourceId): Generator {
+			$discoveredSourceIds = [];
+
+			/** @var DocumentList[] $documentLists */
+			foreach ($index->execFetchFn($sourceId) as $documentLists) {
+				$event = new SyncEvent([
+					'documentLists' => $documentLists,
+					'meiliClient' => $this->meiliClient,
+				]);
+
+				if ($this->hasEventHandlers(self::EVENT_BEFORE_SYNC_CHUNK)) {
+					$this->trigger(self::EVENT_BEFORE_SYNC_CHUNK, $event);
+				}
+
+				$documentLists = $event->documentLists;
+				$size = 0;
+				$documentBatches = [];
+
+				foreach ($documentLists as $documentList) {
+					// When discovering a new source Entry ID, mark all
+					// existing tracked documents as pending for deletion.
+					if (! in_array($documentList->sourceId, $discoveredSourceIds, true)) {
+						$discoveredSourceIds[] = $documentList->sourceId;
+
+						TrackedDocument::updateAll([
+							'pendingDeletion' => true,
+						], [
+							'indexHandle' => $index->handle,
+							'sourceId' => $documentList->sourceId,
+						]);
+					}
+
+					$size += count($documentList->documents);
+					$documentBatches[] = $documentList->documents;
+
+					// Exclude all tracked documents that have been added to/updated in the index
+					// from deletion
+					foreach ($documentList->documents as $document) {
+						$trackedDocumentIdentifier = [
+							'indexHandle' => $index->handle,
+							'sourceId' => $documentList->sourceId,
+							'documentId' => $document[$index->getSettings()->primaryKey],
+						];
+
+						$trackedDocumentQuery = TrackedDocument::find()->where($trackedDocumentIdentifier);
+						if ($trackedDocumentQuery->exists()) {
+							/** @var TrackedDocument $document */
+							$document = $trackedDocumentQuery->one();
+							$document->pendingDeletion = false;
+							$document->save();
+						} else {
+							(new TrackedDocument($trackedDocumentIdentifier))->save();
+						}
+					}
+				}
+
+				$this->meiliClient
+					->index($index->indexId)
+					->addDocuments(array_merge(...$documentBatches), $index->getSettings()->primaryKey);
+
+				yield $size;
+
+				if ($this->hasEventHandlers(self::EVENT_AFTER_SYNC_CHUNK)) {
+					$this->trigger(self::EVENT_AFTER_SYNC_CHUNK, $event);
+				}
+			}
+
+			// Purge documents that should no longer exist
+			$documentsToBeDeleted = TrackedDocument::findAll([
+				'indexHandle' => $index->handle,
+				'pendingDeletion' => true,
 			]);
 
-			if ($this->hasEventHandlers(self::EVENT_BEFORE_SYNC_CHUNK)) {
-				$this->trigger(self::EVENT_BEFORE_SYNC_CHUNK, $event);
+			foreach ($documentsToBeDeleted as $documentToBeDeleted) {
+				$this->meiliClient->index($index->indexId)->deleteDocument($documentToBeDeleted->documentId);
 			}
 
-			$chunk = $event->chunk;
+			TrackedDocument::deleteAll([
+				'indexHandle' => $index->handle,
+				'pendingDeletion' => true,
+			]);
+		});
 
-			$size = count($chunk);
-
-			$this->meiliClient
-				->index($index->indexId)
-				->addDocuments($chunk, $index->getSettings()->primaryKey);
-
-			if ($this->hasEventHandlers(self::EVENT_AFTER_SYNC_CHUNK)) {
-				$this->trigger(self::EVENT_AFTER_SYNC_CHUNK, $event);
-			}
-
-			yield $size;
+		foreach ($generator as $item) {
+			yield $item;
 		}
 	}
 
@@ -264,5 +349,27 @@ class Sync extends Component
 		$stats = $this->meiliClient->index($index->indexId)->stats();
 
 		return $stats['numberOfDocuments'];
+	}
+
+	/**
+	 * @template TReturn of mixed
+	 * @param callable(): TReturn $callable
+	 * @return TReturn
+	 */
+	private function runWithIndexMutex(Index $index, callable $callable): mixed
+	{
+		// Make sure there's only one job tracking documents simultaneously.
+		$mutexName = $index->getDocumentTrackingMutexName();
+		$mutexAcquired = Craft::$app->mutex->acquire($mutexName, 1800);
+
+		if (! $mutexAcquired) {
+			throw new \RuntimeException("Unable to acquire document tracking mutex for index {$index->handle}");
+		}
+
+		$returnValue = $callable();
+
+		Craft::$app->mutex->release($mutexName);
+
+		return $returnValue;
 	}
 }

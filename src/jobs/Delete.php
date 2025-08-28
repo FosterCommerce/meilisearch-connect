@@ -10,7 +10,7 @@ class Delete extends BaseJob
 {
 	public ?string $indexHandle = null;
 
-	public string|int $identifier;
+	public string|int $sourceId;
 
 	/**
 	 * @param array<array-key, mixed> $config
@@ -38,14 +38,14 @@ class Delete extends BaseJob
 
 		$totalIndices = $indices->count();
 		$indices->each(function ($index, $i) use ($queue, $totalIndices): void {
-			Plugin::getInstance()->sync->delete($index, $this->identifier);
+			Plugin::getInstance()->sync->delete($index, $this->sourceId);
 			$this->setProgress($queue, $i / $totalIndices);
 		});
 	}
 
 	protected function defaultDescription(): ?string
 	{
-		$description = "Deleting {$this->identifier} from";
+		$description = "Deleting {$this->sourceId} from";
 		if ($this->indexHandle === null) {
 			return "{$description} all indices";
 		}

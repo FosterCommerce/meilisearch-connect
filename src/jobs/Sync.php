@@ -10,7 +10,7 @@ class Sync extends BaseJob
 {
 	public ?string $indexHandle = null;
 
-	public null|string|int $identifier = null;
+	public null|string|int $sourceId = null;
 
 	/**
 	 * @param array<array-key, mixed> $config
@@ -37,13 +37,13 @@ class Sync extends BaseJob
 		$indices = collect($indices);
 
 		// Only get page count if we're not attempting to synchronize a specific item.
-		$totalPages = $this->identifier === null
+		$totalPages = $this->sourceId === null
 			? $indices->reduce(static fn ($total, Index $index): int => $total + ($index->getPageCount() ?? 0), 0)
 			: 0;
 
 		$currentPage = 0;
 		$indices->each(function ($index) use ($queue, $totalPages, $currentPage): void {
-			foreach (Plugin::getInstance()->sync->sync($index, $this->identifier) as $chunkSize) {
+			foreach (Plugin::getInstance()->sync->sync($index, $this->sourceId) as $chunkSize) {
 				++$currentPage;
 
 				if ($totalPages > 0) {
@@ -57,8 +57,8 @@ class Sync extends BaseJob
 
 	protected function defaultDescription(): ?string
 	{
-		if ($this->identifier !== null) {
-			$description = "Sync {$this->identifier} in";
+		if ($this->sourceId !== null) {
+			$description = "Sync {$this->sourceId} in";
 			if ($this->indexHandle === null) {
 				return "{$description} all indices";
 			}
