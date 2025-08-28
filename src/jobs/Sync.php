@@ -42,7 +42,7 @@ class Sync extends BaseJob
 			: 0;
 
 		$currentPage = 0;
-		$indices->each(function ($index) use ($queue, $totalPages, $currentPage): void {
+		$indices->each(function ($index) use ($queue, $totalPages, &$currentPage): void {
 			foreach (Plugin::getInstance()->sync->sync($index, $this->identifier) as $chunkSize) {
 				++$currentPage;
 
