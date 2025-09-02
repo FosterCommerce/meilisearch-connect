@@ -7,13 +7,11 @@ use craft\base\Model;
 use craft\elements\db\ElementQuery;
 use craft\elements\db\ElementQueryInterface;
 use craft\elements\Entry;
+use fostercommerce\meilisearch\helpers\DocumentList;
 use Generator;
 
 /**
- * @phpstan-type Document array<non-empty-string, mixed>
- * @phpstan-type DocumentList array<int, Document>
- * @phpstan-type FetchResult array<int, null|Document|DocumentList>
- * @phpstan-type FetchCallableReturn Generator<int, FetchResult>|FetchResult
+ * @phpstan-type FetchCallableReturn Generator<DocumentList>|DocumentList[]
  */
 class Index extends Model
 {
@@ -84,9 +82,9 @@ class Index extends Model
 	/**
 	 * A callback used to fetch data that should be synchronized to the index in a Meilisearch instance.
 	 *
-	 * The callable will receive a reference to it's Index and possibly an identifier.
+	 * The callable will receive a reference to its Index and possibly an ID of the source element.
 	 *
-	 * It must return either an array of associative arrays, or a Generator, which yields associative arrays in chunks.
+	 * It must return either an array of DocumentList, or a Generator, which yields DocumentList objects.
 	 *
 	 * It is preferable to use a generator so that the entire resultset isn't loaded into memory and sent to Meilisearch in a single chunk.
 	 *
@@ -97,17 +95,15 @@ class Index extends Model
 	 * ```
 	 * static function (Index $index, ?int $id, mixed $extra): array {
 	 *   return collect(Entry::find()->all())
-	 *     ->map(static fn ($entry) => [
-	 *       'id' => $entry->id,
-	 *       'title' => $entry->title,
-	 *       'description' => $entry->description,
-	 *     ]);
+	 *     ->map(static fn ($entry) => new DocumentList([
+	 *        'id' => $entry->id,
+	 *        'title' => $entry->title,
+	 *        'description' => $entry->description,
+	 *     ], $entry->id));
 	 * }
 	 * ```
 	 *
 	 * Not required to be set when using search-only functionality.
-	 *
-	 * If this callable returns `false` or a falsey value, then the item will not be indexed.
 	 *
 	 * @var ?callable(Index, null|string|int, mixed): FetchCallableReturn
 	 */
@@ -187,9 +183,9 @@ class Index extends Model
 
 	/**
 	 * @param mixed $extra Additional data to pass to the fetch function
-	 * @return Generator<int, FetchResult>
+	 * @return Generator<DocumentList[]>
 	 */
-	public function execFetchFn(null|string|int $identifier = null, mixed $extra = null): Generator
+	public function execFetchFn(null|string $sourceHandle = null, mixed $extra = null): Generator
 	{
 		$fetchFn = $this->fetch;
 
@@ -197,41 +193,17 @@ class Index extends Model
 			throw new \RuntimeException('Fetch callable is not configured correctly');
 		}
 
-		$result = $fetchFn($this, $identifier, $extra);
+		/** @var Generator<DocumentList[]>|DocumentList[]|DocumentList $result */
+		$result = $fetchFn($this, $sourceHandle, $extra);
 
-		if ($result instanceof Generator) {
+		if (is_array($result)) {  // DocumentList[]
+			yield $result;
+		} elseif ($result instanceof Generator) {  // Generator<DocumentList[]>
 			foreach ($result as $chunk) {
-				yield $this->flatten($chunk);
+				yield $chunk;
 			}
-		} elseif (is_array($result)) {
-			yield $this->flatten($result);
-		} else {
-			throw new \RuntimeException('Invalid return value from fetch function');
+		} else {  // DocumentList
+			yield [$result];
 		}
-	}
-
-	/**
-	 * @param FetchResult $chunk
-	 * @return DocumentList
-	 */
-	private function flatten(?array $chunk): array
-	{
-		// Flatten the chunk of data so that multiple documents are supported
-		/** @var DocumentList $flattened */
-		$flattened = collect($chunk)
-			->flatMap(static function ($item): array {
-				$item ??= [];
-
-				if (array_is_list($item)) {
-					return $item;
-				}
-
-				return [$item];
-			})
-			->filter() // Filter out any falsy values
-			->values()
-			->toArray();
-
-		return $flattened;
 	}
 }

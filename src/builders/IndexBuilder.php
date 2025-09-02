@@ -138,9 +138,9 @@ class IndexBuilder
 	/**
 	 * Set the callback used to fetch data that should be synchronized to the index in a Meilisearch instance.
 	 *
-	 * The callable will possibly receive an identifier and a page size argument.
+	 * The callable will possibly receive an ID of the source element and a page size argument.
 	 *
-	 * It must return either an array of associative arrays, or a Generator, which yields associative arrays in chunks.
+	 * It must return either an array of DocumentList, or a Generator, which yields arrays of DocumentList in chunks.
 	 *
 	 * It is preferable to use a generator so that the entire resultset isn't loaded into memory and sent to Meilisearch in a single chunk.
 	 *
@@ -151,15 +151,15 @@ class IndexBuilder
 	 * ```
 	 * static function (Index $index, ?int $id, mixed $extra): array {
 	 *   return collect(Entry::find()->all())
-	 *     ->map(static fn ($entry) => [
-	 *       'id' => $entry->id,
-	 *       'title' => $entry->title,
-	 *       'description' => $entry->description,
-	 *     ]);
+	 *     ->map(static fn ($entry) => new DocumentList([
+	 *        'id' => $entry->id,
+	 *        'title' => $entry->title,
+	 *        'description' => $entry->description,
+	 *      ], $entry->id));
 	 * }
 	 * ```
 	 *
-	 * If the callable returns `false` or a falsey value, then the item will not be indexed.
+	 * Return an empty DocumentList (no `documents`) to prevent an entry from being indexed at all.
 	 */
 	public function withFetchFn(?callable $fn): self
 	{
