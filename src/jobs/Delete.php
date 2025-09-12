@@ -2,15 +2,17 @@
 
 namespace fostercommerce\meilisearch\jobs;
 
+use craft\helpers\Queue;
 use craft\queue\BaseJob;
 use fostercommerce\meilisearch\models\Index;
 use fostercommerce\meilisearch\Plugin;
+use fostercommerce\meilisearch\records\Source;
 
 class Delete extends BaseJob
 {
 	public ?string $indexHandle = null;
 
-	public string|int $identifier;
+	public string|int $sourceHandle;
 
 	/**
 	 * @param array<array-key, mixed> $config
@@ -37,15 +39,36 @@ class Delete extends BaseJob
 		$indices = collect($indices);
 
 		$totalIndices = $indices->count();
+
+		// Find dependent sources and sync them
+		$indices->each(function (Index $index): void {
+			$source = Source::findOne([
+				'indexHandle' => $index->handle,
+				'handle' => (string) $this->sourceHandle,
+			]);
+
+			if ($source === null) {
+				return;
+			}
+
+			/** @var Source $batchQueryResult */
+			foreach ($source->getChildSources()->each() as $batchQueryResult) {
+				Queue::push(new Sync([
+					'indexHandle' => $this->indexHandle,
+					'sourceHandle' => $batchQueryResult->handle,
+				]));
+			}
+		});
+
 		$indices->each(function ($index, $i) use ($queue, $totalIndices): void {
-			Plugin::getInstance()->sync->delete($index, $this->identifier);
+			Plugin::getInstance()->sync->delete($index, (string) $this->sourceHandle);
 			$this->setProgress($queue, $i / $totalIndices);
 		});
 	}
 
 	protected function defaultDescription(): ?string
 	{
-		$description = "Deleting {$this->identifier} from";
+		$description = "Deleting {$this->sourceHandle} from";
 		if ($this->indexHandle === null) {
 			return "{$description} all indices";
 		}
