@@ -67,7 +67,11 @@ class Plugin extends BasePlugin
 
 		$settings = $this->getSettings();
 
-		$indexes = collect($settings->indices);
+		// Only include indexes that have autoSync enabled.
+		// It is true by default, so would need to be explicitly set to false to disable.
+		// However, sync will only be triggered for an index if it has a query which is an instance of ElementQuery.
+		$indexes = collect($settings->indices)->filter(static fn (Index $index): bool => $index->autoSync);
+
 		if ($indexes->isNotEmpty()) {
 			Event::on(
 				Element::class,
