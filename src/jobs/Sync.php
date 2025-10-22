@@ -2,6 +2,7 @@
 
 namespace fostercommerce\meilisearch\jobs;
 
+use Craft;
 use craft\helpers\Queue;
 use craft\queue\BaseJob;
 use fostercommerce\meilisearch\models\Index;
@@ -28,9 +29,15 @@ class Sync extends BaseJob
 	public function __construct(array $config = [])
 	{
 		if (isset($config['indexName'])) {
-			// Index name is deprecated
+			Craft::$app->getDeprecator()->log('indexName', '`Sync` job `indexName` property has been deprecated. Use `indexHandle` instead.');
 			$config['indexHandle'] = $config['indexName'];
 			unset($config['indexName']);
+		}
+
+		if (isset($config['identifier'])) {
+			Craft::$app->getDeprecator()->log('identifier', '`Sync` job `identifier` property has been deprecated. Use `sourceHandle` instead.');
+			$config['sourceHandle'] = $config['identifier'];
+			unset($config['identifier']);
 		}
 
 		parent::__construct($config);

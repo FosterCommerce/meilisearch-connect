@@ -23,21 +23,6 @@ class Source extends ActiveRecord
 		return $this->hasMany(
 			self::class,
 			[
-				'id' => 'parentSourceId',
-			],
-		)->viaTable(
-			SourceDependency::tableName(),
-			[
-				'sourceId' => 'id',
-			],
-		);
-	}
-
-	public function getParentSources(): ActiveQuery
-	{
-		return $this->hasMany(
-			self::class,
-			[
 				'id' => 'sourceId',
 			],
 		)->viaTable(
@@ -46,6 +31,22 @@ class Source extends ActiveRecord
 				'parentSourceId' => 'id',
 			],
 		);
+	}
+
+	public function getParentSources(): ActiveQuery
+	{
+		return $this
+			->hasMany(
+				self::class,
+				[
+					'id' => 'parentSourceId',
+				],
+			)->viaTable(
+				SourceDependency::tableName(),
+				[
+					'sourceId' => 'id',
+				],
+			);
 	}
 
 	public function getTrackedDocuments(): ActiveQuery
@@ -69,6 +70,19 @@ class Source extends ActiveRecord
 			$source = new self($sourceIdentifier);
 			$source->save();
 		}
+
+		return $source;
+	}
+
+	public static function get(string $indexHandle, string $sourceHandle): ?self
+	{
+		$sourceIdentifier = [
+			'indexHandle' => $indexHandle,
+			'handle' => $sourceHandle,
+		];
+
+		/** @var Source|null $source */
+		$source = self::findOne($sourceIdentifier);
 
 		return $source;
 	}
