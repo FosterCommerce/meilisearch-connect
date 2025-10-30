@@ -110,6 +110,15 @@ class Index extends Model
 	private $fetch;
 
 	/**
+	 * A callback that returns the name of a document to be used in job descriptions.
+	 *
+	 * Not required for any functionality. If not set, the source ID will be used as description instead.
+	 *
+	 * @var ?callable(Index, null|string|int, mixed): string
+	 */
+	private $name;
+
+	/**
 	 * @param array{
 	 *     handle?: non-empty-string,
 	 *     indexId?: non-empty-string,
@@ -139,6 +148,14 @@ class Index extends Model
 	public function setFetch(?callable $fetch): void
 	{
 		$this->fetch = $fetch;
+	}
+
+	/**
+	 * @param ?callable(Index, null|string|int, mixed): string $name
+	 */
+	public function setName(?callable $name): void
+	{
+		$this->name = $name;
 	}
 
 	public function init(): void
@@ -205,5 +222,19 @@ class Index extends Model
 		} else {  // DocumentList
 			yield [$result];
 		}
+	}
+
+	/**
+	 * @param mixed $extra Additional data to pass to the fetch function
+	 */
+	public function getDocumentName(null|string $sourceHandle = null, mixed $extra = null): string
+	{
+		$nameFn = $this->name;
+
+		if ($nameFn === null) {
+			return $this->handle;
+		}
+
+		return $nameFn($this, $sourceHandle, $extra);
 	}
 }

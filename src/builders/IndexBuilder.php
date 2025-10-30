@@ -39,6 +39,11 @@ class IndexBuilder
 	private mixed $fetchFn = null;
 
 	/**
+	 * @var ?callable
+	 */
+	private mixed $nameFn = null;
+
+	/**
 	 * @param array<non-empty-string, mixed> $settings
 	 */
 	public static function fromSettings(array $settings): self
@@ -89,10 +94,11 @@ class IndexBuilder
 			throw new \RuntimeException('Query must be instance of ' . ElementQuery::class . ' or a callable that returns an instance of ' . ElementQuery::class);
 		}
 
-		['query' => $query, 'fetch' => $fetch] = Fetch::propertiesFromElementQuery($query, $transformer);
+		['query' => $query, 'fetch' => $fetch, 'name' => $name] = Fetch::propertiesFromElementQuery($query, $transformer);
 
 		$this->query = $query;
 		$this->fetchFn = $fetch;
+		$this->nameFn = $name;
 
 		return $this;
 	}
@@ -168,6 +174,16 @@ class IndexBuilder
 	}
 
 	/**
+	 * Set the callback used to fetch the name of a document in an index.
+	 * This is only used for job descriptions in the Craft CMS control panel.
+	 */
+	public function withNameFn(?callable $fn): self
+	{
+		$this->nameFn = $fn;
+		return $this;
+	}
+
+	/**
 	 * Build and return the configuration array
 	 *
 	 * @return array<non-empty-string, mixed>
@@ -183,6 +199,7 @@ class IndexBuilder
 			'activeStatuses' => $this->activeStatuses,
 			'pages' => $this->pagesFn,
 			'fetch' => $this->fetchFn,
+			'name' => $this->nameFn,
 		];
 	}
 }

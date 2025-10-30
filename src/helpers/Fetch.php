@@ -2,6 +2,7 @@
 
 namespace fostercommerce\meilisearch\helpers;
 
+use Craft;
 use craft\base\ElementInterface;
 use craft\elements\db\ElementQueryInterface;
 use fostercommerce\meilisearch\models\ElementQueryFetchExtra;
@@ -16,6 +17,7 @@ use Generator;
  * @phpstan-type TransformerFn callable(TElement, RegisterDependencyFn): (Document|Document[]|null)
  * @phpstan-type PagesFn callable(Index): int
  * @phpstan-type FetchFn callable(Index, null|string|int, mixed): (Generator<DocumentList[]>|DocumentList[]|DocumentList)
+ * @phpstan-type NameFn callable(Index, string|int, mixed): string
  */
 class Fetch
 {
@@ -25,6 +27,7 @@ class Fetch
 	 * @return array{
 	 *     query: ElementQueryInterface|callable(): ElementQueryInterface,
 	 *     fetch: FetchFn,
+	 *     name: NameFn,
 	 * }
 	 */
 	public static function propertiesFromElementQuery(ElementQueryInterface|callable $query, callable $transformer): array
@@ -32,6 +35,7 @@ class Fetch
 		return [
 			'query' => $query,
 			'fetch' => self::createFetchFn($transformer),
+			'name' => self::createNameFn(),
 		];
 	}
 
@@ -85,6 +89,24 @@ class Fetch
 
 				++$page;
 			} while (count($items) === $pageSize);
+		};
+	}
+
+	/**
+	 * @return NameFn
+	 */
+	public static function createNameFn(): callable
+	{
+		return static function (Index $index, string|int $sourceHandle): string {
+			// The PHPDoc template type for getElementById is not correct with elementType being null
+			// @phpstan-ignore-next-line
+			$element = Craft::$app->elements->getElementById((int) $sourceHandle, null, Craft::$app->getSites()->allSiteIds);
+
+			if ($element === null) {
+				return "[not found {$sourceHandle}]";
+			}
+
+			return $element->title ?? "[no title {$sourceHandle}]";
 		};
 	}
 }

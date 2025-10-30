@@ -56,7 +56,7 @@ class Source extends ActiveRecord
 		]);
 	}
 
-	public static function getOrCreate(string $indexHandle, string $sourceHandle): self
+	public static function get(string $indexHandle, string $sourceHandle, bool $create = false): self
 	{
 		$sourceIdentifier = [
 			'indexHandle' => $indexHandle,
@@ -70,19 +70,6 @@ class Source extends ActiveRecord
 			$source = new self($sourceIdentifier);
 			$source->save();
 		}
-
-		return $source;
-	}
-
-	public static function get(string $indexHandle, string $sourceHandle): ?self
-	{
-		$sourceIdentifier = [
-			'indexHandle' => $indexHandle,
-			'handle' => $sourceHandle,
-		];
-
-		/** @var Source|null $source */
-		$source = self::findOne($sourceIdentifier);
 
 		return $source;
 	}

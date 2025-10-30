@@ -245,7 +245,7 @@ class Sync extends Component
 				$documentBatches = [];
 
 				foreach ($documentLists as $documentList) {
-					$source = Source::getOrCreate($index->handle, $documentList->sourceHandle);
+					$source = Source::get($index->handle, $documentList->sourceHandle, true);
 
 					// When discovering a new source Entry ID, mark all
 					// existing tracked documents as pending for deletion.
@@ -285,7 +285,7 @@ class Sync extends Component
 
 					foreach ($documentList->dependentSourceHandles as $dependentSourceHandle) {
 						(new SourceDependency([
-							'sourceId' => Source::getOrCreate($index->handle, $dependentSourceHandle)->id,
+							'sourceId' => Source::get($index->handle, $dependentSourceHandle, true)->id,
 							'parentSourceId' => $source->id,
 						]))->save();
 					}

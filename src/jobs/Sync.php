@@ -108,19 +108,22 @@ class Sync extends BaseJob
 
 	protected function defaultDescription(): ?string
 	{
-		if ($this->sourceHandle !== null) {
-			$description = "Sync {$this->sourceHandle} in";
-			if ($this->indexHandle === null) {
-				return "{$description} all indices";
-			}
-
-			return "{$description} {$this->indexHandle}";
-		}
-
-		if ($this->indexHandle === null) {
+		if ($this->sourceHandle === null && $this->indexHandle === null) {
 			return 'Sync all indices';
 		}
 
-		return "Sync {$this->indexHandle}";
+		if ($this->sourceHandle === null) {
+			return 'Sync index {$this->indexHandle}';
+		}
+
+		$indices = Plugin::getInstance()->settings->getIndices($this->indexHandle);
+
+		if ($indices instanceof Index) {
+			$indices = [$indices];
+		}
+
+		$indices = collect($indices);
+
+		return 'Sync ' . $indices->map(fn (Index $index): string => "'{$index->getDocumentName((string) $this->sourceHandle)}' ({$index->handle})")->join(', ');
 	}
 }
