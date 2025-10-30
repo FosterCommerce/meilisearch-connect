@@ -17,7 +17,6 @@ use fostercommerce\meilisearch\jobs\Delete as DeleteJob;
 use fostercommerce\meilisearch\jobs\Sync as SyncJob;
 use fostercommerce\meilisearch\models\Index;
 use fostercommerce\meilisearch\models\Settings;
-use fostercommerce\meilisearch\records\Source;
 use fostercommerce\meilisearch\services\Search;
 use fostercommerce\meilisearch\services\Sync;
 use fostercommerce\meilisearch\utilities\Indices;
@@ -97,15 +96,6 @@ class Plugin extends BasePlugin
 							return;
 						}
 
-						$parents = $this->parents($index->handle, (string) $sender->id);
-						// If the source has parents, then push sync jobs so that they're updated correctly
-						foreach ($parents as $parent) {
-							Queue::push(new SyncJob([
-								'indexHandle' => $index->handle,
-								'sourceHandle' => $parent->handle,
-							]));
-						}
-
 						if (in_array($sender->getStatus(), $index->activeStatuses, true)) {
 							// Push a sync job in case this source needs to be sync'd too.
 							Queue::push(new SyncJob([
@@ -139,15 +129,6 @@ class Plugin extends BasePlugin
 					}
 
 					$indexes->each(function (Index $index) use (&$sender): void {
-						$parents = $this->parents($index->handle, (string) $sender->id);
-						// If the source has parents, then push sync jobs so that they're updated correctly
-						foreach ($parents as $parent) {
-							Queue::push(new SyncJob([
-								'indexHandle' => $index->handle,
-								'sourceHandle' => $parent->handle,
-							]));
-						}
-
 						// Ensure that the source is deleted if it has been previously sync'd too.
 						Queue::push(new DeleteJob([
 							'indexHandle' => $index->handle,
@@ -180,23 +161,5 @@ class Plugin extends BasePlugin
 	protected function createSettingsModel(): ?Model
 	{
 		return Craft::createObject(Settings::class);
-	}
-
-	/**
-	 * @return Source[]
-	 */
-	private function parents(string $indexHandle, string $sourceHandle): array
-	{
-		// Check whether the source exists.
-		$source = Source::get($indexHandle, $sourceHandle);
-		if (! $source instanceof Source) {
-			return [];
-		}
-
-		// If it does, find any parent sources.
-		/** @var Source[] $parentSources */
-		$parentSources = $source->getParentSources()->all();
-
-		return $parentSources;
 	}
 }
