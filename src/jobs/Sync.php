@@ -88,15 +88,15 @@ class Sync extends BaseJob
 
 			/** @var Source $batchQueryResult */
 			foreach ($syncedSourcesQuery->each() as $batchQueryResult) {
-				/** @var Source $childSource */
-				foreach ($batchQueryResult->getChildSources()->each() as $childSource) {
+				/** @var Source $parentSource */
+				foreach ($batchQueryResult->getParentSources()->each() as $parentSource) {
 					if ($this->dependencyRecursionLevel === self::MAX_DEPENDENCY_RECURSION_LEVEL) {
 						throw new \RuntimeException('Sync dependency recursion limit of ' . self::MAX_DEPENDENCY_RECURSION_LEVEL . ' levels reached.');
 					}
 
 					Queue::push(new Sync([
 						'indexHandle' => $this->indexHandle,
-						'sourceHandle' => $childSource->handle,
+						'sourceHandle' => $parentSource->handle,
 						'dependencyRecursionLevel' => $this->dependencyRecursionLevel + 1,
 					]));
 				}

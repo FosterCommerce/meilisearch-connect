@@ -59,7 +59,7 @@ class Delete extends BaseJob
 			}
 
 			/** @var Source $batchQueryResult */
-			foreach ($source->getChildSources()->each() as $batchQueryResult) {
+			foreach ($source->getParentSources()->each() as $batchQueryResult) {
 				Queue::push(new Sync([
 					'indexHandle' => $this->indexHandle,
 					'sourceHandle' => $batchQueryResult->handle,

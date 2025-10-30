@@ -56,7 +56,10 @@ class Source extends ActiveRecord
 		]);
 	}
 
-	public static function get(string $indexHandle, string $sourceHandle, bool $create = false): self
+	/**
+	 * @return ($createIfMissing is true ? self : self|null)
+	 */
+	public static function get(string $indexHandle, string $sourceHandle, bool $createIfMissing = false): ?self
 	{
 		$sourceIdentifier = [
 			'indexHandle' => $indexHandle,
@@ -66,7 +69,7 @@ class Source extends ActiveRecord
 		/** @var Source|null $source */
 		$source = self::findOne($sourceIdentifier);
 
-		if ($source === null) {
+		if ($createIfMissing && $source === null) {
 			$source = new self($sourceIdentifier);
 			$source->save();
 		}
