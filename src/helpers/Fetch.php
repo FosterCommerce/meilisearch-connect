@@ -63,9 +63,10 @@ class Fetch
 
 			$page = 0;
 			$pageSize = $index->pageSize ?? Index::DEFAULT_PAGE_SIZE;
+			$queryOffset = $indexQuery->offset ?? 0;
 
 			do {
-				$query = $indexQuery->offset($page * $pageSize)->limit($pageSize);
+				$query = $indexQuery->offset(($page * $pageSize) + $queryOffset)->limit($pageSize);
 				$items = $query->all();
 
 				yield array_map(static function ($item) use (&$transformer): DocumentList {
