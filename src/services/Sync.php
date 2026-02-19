@@ -222,7 +222,7 @@ class Sync extends Component
 	 * @param null|string $sourceHandle The value used to identify a single item in the index
 	 * @return Generator<int>
 	 */
-	public function sync(Index $index, null|string $sourceHandle): Generator
+	public function sync(Index $index, null|string $sourceHandle, bool $track = true): Generator
 	{
 		$transaction = Source::getDb()->beginTransaction();
 
@@ -249,15 +249,13 @@ class Sync extends Component
 
 					// When discovering a new source Entry ID, mark all
 					// existing tracked documents as pending for deletion.
-					if (! in_array($source->id, $discoveredSourceIds, true)) {
+					if ($track && ! in_array($source->id, $discoveredSourceIds, true)) {
 						$discoveredSourceIds[] = $source->id;
-
 						TrackedDocument::updateAll([
 							'pendingDeletion' => true,
 						], [
 							'sourceId' => $source->id,
 						]);
-
 						SourceDependency::deleteAll([
 							'parentSourceId' => $source->id,
 						]);
@@ -302,18 +300,20 @@ class Sync extends Component
 				}
 			}
 
-			// Purge documents that should no longer exist
-			$documentsToBeDeletedQuery = TrackedDocument::find()
-				->joinWith('source')
-				->where([
-					'indexHandle' => $index->handle,
-					'pendingDeletion' => true,
-				]);
+			if ($track) {
+				// Purge documents that should no longer exist
+				$documentsToBeDeletedQuery = TrackedDocument::find()
+					->joinWith('source')
+					->where([
+						'indexHandle' => $index->handle,
+						'pendingDeletion' => true,
+					]);
 
-			/** @var TrackedDocument $batchQueryResult */
-			foreach ($documentsToBeDeletedQuery->each() as $batchQueryResult) {
-				$this->meiliClient->index($index->indexId)->deleteDocument($batchQueryResult->documentId);
-				$batchQueryResult->delete();
+				/** @var TrackedDocument $batchQueryResult */
+				foreach ($documentsToBeDeletedQuery->each() as $batchQueryResult) {
+					$this->meiliClient->index($index->indexId)->deleteDocument($batchQueryResult->documentId);
+					$batchQueryResult->delete();
+				}
 			}
 
 			$transaction->commit();
@@ -335,7 +335,12 @@ class Sync extends Component
 		$swapIndex->indexId = "_swap_{$swapIndex->indexId}__{$postfix}";
 		$this->syncSettings($swapIndex);
 
-		foreach ($this->sync($swapIndex, null) as $size) {
+		// Make sure we reset the sources for this index
+		Source::deleteAll([
+			'indexHandle' => $index->handle,
+		]);
+
+		foreach ($this->sync($swapIndex, null, false) as $size) {
 			yield $size;
 		}
 

@@ -1,5 +1,12 @@
 # Release Notes for Meilisearch Connect
 
+# Unreleased
+
+- Fix the sync job progress being reset when each index starts synchronzing.
+- Restores the auto-sync filter for ElementQuery-based indexes.
+- Adds document dependency tracking for better auto-sync.
+- Includes the query offset if present when paging through the results of an ElementQuery.
+
 # 1.1.4 - 2025-08-27
 - Allow extra options to be passed through to the fetch function
 
