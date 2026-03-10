@@ -116,14 +116,14 @@ class Sync extends BaseJob
 			return "Sync index {$this->indexHandle}";
 		}
 
-		$indices = Plugin::getInstance()->settings->getIndices($this->indexHandle);
+		$indexes = Plugin::getInstance()->settings->getIndices($this->indexHandle);
 
-		if ($indices instanceof Index) {
-			$indices = [$indices];
+		if ($indexes instanceof Index) {
+			$indexes = [$indexes];
 		}
 
-		$indices = collect($indices);
-
-		return 'Sync ' . $indices->map(fn (Index $index): string => "'{$index->getDocumentName((string) $this->sourceHandle)}' ({$index->handle})")->join(', ');
+		return 'Sync ' . collect($indexes)
+			->map(fn (Index $index): string => "'{$index->getDocumentName((string) $this->sourceHandle)}' ({$index->handle})")
+			->join(', ');
 	}
 }

@@ -11,7 +11,9 @@ class m260310_000000_add_unique_indexes_to_sources_and_tracked_documents extends
 	public function safeUp(): bool
 	{
 		$this->createIndex(null, Source::tableName(), ['handle', 'indexHandle'], true);
-		$this->createIndex(null, TrackedDocument::tableName(), ['sourceId', 'documentId'], true);
+
+		$this->dropColumn(TrackedDocument::tableName(), 'id');
+		$this->addPrimaryKey(null, TrackedDocument::tableName(), ['sourceId', 'documentId']);
 
 		return true;
 	}

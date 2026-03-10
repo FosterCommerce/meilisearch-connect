@@ -186,7 +186,7 @@ class Sync extends Component
 
 	public function flush(Index $index): void
 	{
-		Source::getDb()->transaction(function () use (&$index): void {
+		Source::getDb()->transaction(function () use ($index): void {
 			$this->meiliClient
 				->index($index->indexId)
 				->deleteAllDocuments();
@@ -199,7 +199,7 @@ class Sync extends Component
 
 	public function delete(Index $index, string $sourceHandle): void
 	{
-		Source::getDb()->transaction(function () use (&$sourceHandle, &$index): void {
+		Source::getDb()->transaction(function () use ($sourceHandle, $index): void {
 			$source = Source::findOne([
 				'indexHandle' => $index->handle,
 				'handle' => $sourceHandle,
