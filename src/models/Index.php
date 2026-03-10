@@ -11,7 +11,7 @@ use fostercommerce\meilisearch\helpers\DocumentList;
 use Generator;
 
 /**
- * @phpstan-type FetchCallableReturn Generator<DocumentList>|DocumentList[]
+ * @phpstan-type FetchCallableReturn Generator<DocumentList>|DocumentList[]|DocumentList
  */
 class Index extends Model
 {
@@ -95,11 +95,15 @@ class Index extends Model
 	 * ```
 	 * static function (Index $index, ?int $id, mixed $extra): array {
 	 *   return collect(Entry::find()->all())
-	 *     ->map(static fn ($entry) => new DocumentList([
-	 *        'id' => $entry->id,
-	 *        'title' => $entry->title,
-	 *        'description' => $entry->description,
-	 *     ], $entry->id));
+	 *     ->map(static fn ($entry) => new DocumentList(
+	 *       [
+	 *         'id' => $entry->id,
+	 *         'title' => $entry->title,
+	 *         'description' => $entry->description,
+	 *       ],
+	 *       $entry->id,
+	 *       [],
+	 *     ));
 	 * }
 	 * ```
 	 *
@@ -213,13 +217,13 @@ class Index extends Model
 		/** @var Generator<DocumentList[]>|DocumentList[]|DocumentList $result */
 		$result = $fetchFn($this, $sourceHandle, $extra);
 
-		if (is_array($result)) {  // DocumentList[]
+		if (is_array($result)) { // DocumentList[]
 			yield $result;
-		} elseif ($result instanceof Generator) {  // Generator<DocumentList[]>
+		} elseif ($result instanceof Generator) { // Generator<DocumentList[]>
 			foreach ($result as $chunk) {
 				yield $chunk;
 			}
-		} else {  // DocumentList
+		} else { // DocumentList
 			yield [$result];
 		}
 	}

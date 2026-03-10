@@ -2,13 +2,13 @@
 
 namespace fostercommerce\meilisearch\migrations;
 
+use craft\db\Migration;
 use craft\helpers\App;
-use craft\migrations\BaseContentRefactorMigration;
 use fostercommerce\meilisearch\records\Source;
 use fostercommerce\meilisearch\records\SourceDependency;
 use fostercommerce\meilisearch\records\TrackedDocument;
 
-class m250827_000000_tracked_documents extends BaseContentRefactorMigration
+class m250827_000000_tracked_documents extends Migration
 {
 	public function safeUp(): bool
 	{

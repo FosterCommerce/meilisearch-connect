@@ -186,7 +186,7 @@ class Sync extends Component
 
 	public function flush(Index $index): void
 	{
-		Source::getDb()->transaction(function () use (&$index): void {
+		Source::getDb()->transaction(function () use ($index): void {
 			$this->meiliClient
 				->index($index->indexId)
 				->deleteAllDocuments();
@@ -199,13 +199,10 @@ class Sync extends Component
 
 	public function delete(Index $index, string $sourceHandle): void
 	{
-		Source::getDb()->transaction(function () use (&$sourceHandle, &$index): void {
-			$source = Source::findOne([
-				'indexHandle' => $index->handle,
-				'handle' => $sourceHandle,
-			]);
+		Source::getDb()->transaction(function () use ($sourceHandle, $index): void {
+			$source = Source::get($index->handle, $sourceHandle);
 
-			if ($source === null) {
+			if (! $source instanceof Source) {
 				return;
 			}
 
@@ -224,102 +221,75 @@ class Sync extends Component
 	 */
 	public function sync(Index $index, null|string $sourceHandle): Generator
 	{
-		$transaction = Source::getDb()->beginTransaction();
+		/** @var DocumentList[] $documentLists */
+		foreach ($index->execFetchFn($sourceHandle) as $documentLists) {
+			$event = new SyncEvent([
+				'documentLists' => $documentLists,
+				'meiliClient' => $this->meiliClient,
+			]);
 
-		try {
-			$discoveredSourceIds = [];
+			if ($this->hasEventHandlers(self::EVENT_BEFORE_SYNC_CHUNK)) {
+				$this->trigger(self::EVENT_BEFORE_SYNC_CHUNK, $event);
+			}
 
-			/** @var DocumentList[] $documentLists */
-			foreach ($index->execFetchFn($sourceHandle) as $documentLists) {
-				$event = new SyncEvent([
-					'documentLists' => $documentLists,
-					'meiliClient' => $this->meiliClient,
+			$documentLists = $event->documentLists;
+			$documents = [];
+			$removedDocumentIds = [];
+
+			foreach ($documentLists as $documentList) {
+				$source = Source::get($index->handle, $documentList->sourceHandle, true);
+
+				// Fetch old document IDs before clearing so we can diff later
+				/** @var string[] $oldDocumentIds */
+				$oldDocumentIds = TrackedDocument::find()
+					->select('documentId')
+					->where([
+						'sourceId' => $source->id,
+					])
+					->column();
+
+				TrackedDocument::deleteAll([
+					'sourceId' => $source->id,
 				]);
 
-				if ($this->hasEventHandlers(self::EVENT_BEFORE_SYNC_CHUNK)) {
-					$this->trigger(self::EVENT_BEFORE_SYNC_CHUNK, $event);
+				SourceDependency::deleteAll([
+					'parentSourceId' => $source->id,
+				]);
+
+				$documents = [...$documents, ...$documentList->documents];
+
+				// Insert new tracked documents
+				$newDocumentIds = [];
+				foreach ($documentList->documents as $document) {
+					$documentId = $document[$index->getSettings()->primaryKey];
+					$newDocumentIds[] = $documentId;
+
+					(new TrackedDocument([
+						'sourceId' => $source->id,
+						'documentId' => $documentId,
+					]))->save();
 				}
 
-				$documentLists = $event->documentLists;
-				$size = 0;
-				$documentBatches = [];
+				$removedDocumentIds = [...$removedDocumentIds, ...array_diff($oldDocumentIds, $newDocumentIds)];
 
-				foreach ($documentLists as $documentList) {
-					$source = Source::get($index->handle, $documentList->sourceHandle, true);
-
-					// When discovering a new source Entry ID, mark all
-					// existing tracked documents as pending for deletion.
-					if (! in_array($source->id, $discoveredSourceIds, true)) {
-						$discoveredSourceIds[] = $source->id;
-
-						TrackedDocument::updateAll([
-							'pendingDeletion' => true,
-						], [
-							'sourceId' => $source->id,
-						]);
-
-						SourceDependency::deleteAll([
-							'parentSourceId' => $source->id,
-						]);
-					}
-
-					$size += count($documentList->documents);
-					$documentBatches[] = $documentList->documents;
-
-					// Exclude all tracked documents that have been added to/updated in the index
-					// from deletion
-					foreach ($documentList->documents as $document) {
-						$trackedDocumentIdentifier = [
-							'sourceId' => $source->id,
-							'documentId' => $document[$index->getSettings()->primaryKey],
-						];
-
-						$existingTrackedDocument = TrackedDocument::findOne($trackedDocumentIdentifier);
-						if ($existingTrackedDocument !== null) {
-							$existingTrackedDocument->pendingDeletion = false;
-							$existingTrackedDocument->save();
-						} else {
-							(new TrackedDocument($trackedDocumentIdentifier))->save();
-						}
-					}
-
-					foreach ($documentList->dependentSourceHandles as $dependentSourceHandle) {
-						(new SourceDependency([
-							'sourceId' => Source::get($index->handle, $dependentSourceHandle, true)->id,
-							'parentSourceId' => $source->id,
-						]))->save();
-					}
-				}
-
-				$this->meiliClient
-					->index($index->indexId)
-					->addDocuments(array_merge(...$documentBatches), $index->getSettings()->primaryKey);
-
-				yield $size;
-
-				if ($this->hasEventHandlers(self::EVENT_AFTER_SYNC_CHUNK)) {
-					$this->trigger(self::EVENT_AFTER_SYNC_CHUNK, $event);
+				foreach ($documentList->dependentSourceHandles as $dependentSourceHandle) {
+					(new SourceDependency([
+						'sourceId' => Source::get($index->handle, $dependentSourceHandle, true)->id,
+						'parentSourceId' => $source->id,
+					]))->save();
 				}
 			}
 
-			// Purge documents that should no longer exist
-			$documentsToBeDeletedQuery = TrackedDocument::find()
-				->joinWith('source')
-				->where([
-					'indexHandle' => $index->handle,
-					'pendingDeletion' => true,
-				]);
+			$this->meiliClient->index($index->indexId)->deleteDocuments($removedDocumentIds);
+			$this->meiliClient
+				->index($index->indexId)
+				->addDocuments($documents, $index->getSettings()->primaryKey);
 
-			/** @var TrackedDocument $batchQueryResult */
-			foreach ($documentsToBeDeletedQuery->each() as $batchQueryResult) {
-				$this->meiliClient->index($index->indexId)->deleteDocument($batchQueryResult->documentId);
-				$batchQueryResult->delete();
+			yield count($documents);
+
+			if ($this->hasEventHandlers(self::EVENT_AFTER_SYNC_CHUNK)) {
+				$this->trigger(self::EVENT_AFTER_SYNC_CHUNK, $event);
 			}
-
-			$transaction->commit();
-		} catch (\Throwable $throwable) {
-			$transaction->rollBack();
-			throw $throwable;
 		}
 	}
 
@@ -333,6 +303,7 @@ class Sync extends Component
 		$swapIndex = clone $index;
 		$postfix = Craft::$app->getSecurity()->generateRandomString(12);
 		$swapIndex->indexId = "_swap_{$swapIndex->indexId}__{$postfix}";
+		$swapIndex->handle = "_swap_{$swapIndex->handle}__{$postfix}";
 		$this->syncSettings($swapIndex);
 
 		foreach ($this->sync($swapIndex, null) as $size) {
@@ -352,10 +323,29 @@ class Sync extends Component
 		$swapResult = $this->meiliClient->waitForTask($swapResult['taskUid']);
 
 		if ($swapResult['status'] !== 'succeeded') {
+			Source::deleteAll([
+				'indexHandle' => $swapIndex->handle,
+			]);
+
 			throw new \RuntimeException($swapResult['error']['message'] ?? 'Failed to refresh index');
 		}
 
 		$meiliIndex->delete();
+
+		Source::getDb()->transaction(function () use ($index, $swapIndex): void {
+			Source::deleteAll([
+				'indexHandle' => $index->handle,
+			]);
+
+			Source::updateAll(
+				[
+					'indexHandle' => $index->handle,
+				],
+				[
+					'indexHandle' => $swapIndex->handle,
+				],
+			);
+		});
 	}
 
 	public function getDocumentCount(Index $index): int

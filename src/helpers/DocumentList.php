@@ -20,7 +20,7 @@ class DocumentList
 	public function __construct(
 		array $documentOrDocuments,
 		public string $sourceHandle,
-		public array $dependentSourceHandles,
+		public array $dependentSourceHandles = [],
 	) {
 		$this->documents = array_is_list($documentOrDocuments) ? $documentOrDocuments : [$documentOrDocuments];
 	}

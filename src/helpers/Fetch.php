@@ -61,19 +61,15 @@ class Fetch
 				$indexQuery->id($sourceHandle);
 			}
 
-			$page = 0;
 			$pageSize = $index->pageSize ?? Index::DEFAULT_PAGE_SIZE;
-			$queryOffset = $indexQuery->offset ?? 0;
 
-			do {
-				$query = $indexQuery->offset(($page * $pageSize) + $queryOffset)->limit($pageSize);
-				$items = $query->all();
-
+			/** @var TElement[] $elements */
+			foreach ($indexQuery->batch($pageSize) as $elements) {
 				yield array_map(static function ($item) use (&$transformer): DocumentList {
 					/** @var string[] $dependencies */
 					$dependencies = [];
 
-					$registerDependency = function (ElementInterface $element) use (&$dependencies): void {
+					$registerDependency = static function (ElementInterface $element) use (&$dependencies): void {
 						if ($element->id === null) {
 							throw new \RuntimeException('Unable to register an element without an ID as dependency');
 						}
@@ -85,11 +81,9 @@ class Fetch
 
 					// Transformers are allowed to return a single document.
 					// Make sure the fetch function always returns an array of documents.
-					return new DocumentList($documentOrDocuments ?? [], $item->id, $dependencies);
-				}, $items);
-
-				++$page;
-			} while (count($items) === $pageSize);
+					return new DocumentList($documentOrDocuments ?? [], (string) $item->id, $dependencies);
+				}, $elements);
+			}
 		};
 	}
 
@@ -101,13 +95,13 @@ class Fetch
 		return static function (Index $index, string|int $sourceHandle): string {
 			// The PHPDoc template type for getElementById is not correct with elementType being null
 			// @phpstan-ignore-next-line
-			$element = Craft::$app->elements->getElementById((int) $sourceHandle, null, Craft::$app->getSites()->allSiteIds);
+			$element = Craft::$app->elements->getElementById((int) $sourceHandle, null, '*');
 
 			if ($element === null) {
-				return "[not found {$sourceHandle}]";
+				return (string) $sourceHandle;
 			}
 
-			return $element->title ?? "[no title {$sourceHandle}]";
+			return $element->title ?? (string) $sourceHandle;
 		};
 	}
 }

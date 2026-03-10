@@ -49,12 +49,9 @@ class Delete extends BaseJob
 
 		// Find dependent sources and sync them
 		$indices->each(function (Index $index): void {
-			$source = Source::findOne([
-				'indexHandle' => $index->handle,
-				'handle' => (string) $this->sourceHandle,
-			]);
+			$source = Source::get($index->handle, (string) $this->sourceHandle);
 
-			if ($source === null) {
+			if (! $source instanceof Source) {
 				return;
 			}
 

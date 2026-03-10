@@ -22,6 +22,11 @@ class Settings extends Model
 	public ?string $meiliSearchApiKey = null;
 
 	/**
+	 * The maximum number of times a sync job can recursively spawn dependent sync jobs.
+	 */
+	public int $maxDependencyRecursionLevel = 4;
+
+	/**
 	 * A list of configured indices
 	 *
 	 * @var array<non-empty-string, Index>

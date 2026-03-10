@@ -19,6 +19,10 @@ return [
 	 */
 	'meiliSearchApiKey' => '<Meilisearch Search Key>',
 	/**
+	 * The maximum number of times a sync job can recursively spawn dependent sync jobs.
+	 */
+	'maxDependencyRecursionLevel' => 4,
+	/**
 	 * A list of indices that can be created and/or searched.
 	 */
 	'indices' => [
