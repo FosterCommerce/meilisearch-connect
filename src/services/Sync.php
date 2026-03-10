@@ -227,8 +227,6 @@ class Sync extends Component
 		$transaction = Source::getDb()->beginTransaction();
 
 		try {
-			$discoveredSourceIds = [];
-
 			/** @var DocumentList[] $documentLists */
 			foreach ($index->execFetchFn($sourceHandle) as $documentLists) {
 				$event = new SyncEvent([
@@ -241,47 +239,44 @@ class Sync extends Component
 				}
 
 				$documentLists = $event->documentLists;
-				$size = 0;
-				$documentBatches = [];
+				$documents = [];
+				$removedDocumentIds = [];
 
 				foreach ($documentLists as $documentList) {
 					$source = Source::get($index->handle, $documentList->sourceHandle, true);
 
-					// When discovering a new source Entry ID, mark all
-					// existing tracked documents as pending for deletion.
-					if (! in_array($source->id, $discoveredSourceIds, true)) {
-						$discoveredSourceIds[] = $source->id;
-
-						TrackedDocument::updateAll([
-							'pendingDeletion' => true,
-						], [
+					// Fetch old document IDs before clearing so we can diff later
+					/** @var string[] $oldDocumentIds */
+					$oldDocumentIds = TrackedDocument::find()
+						->select('documentId')
+						->where([
 							'sourceId' => $source->id,
-						]);
+						])
+						->column();
 
-						SourceDependency::deleteAll([
-							'parentSourceId' => $source->id,
-						]);
-					}
+					TrackedDocument::deleteAll([
+						'sourceId' => $source->id,
+					]);
 
-					$size += count($documentList->documents);
-					$documentBatches[] = $documentList->documents;
+					SourceDependency::deleteAll([
+						'parentSourceId' => $source->id,
+					]);
 
-					// Exclude all tracked documents that have been added to/updated in the index
-					// from deletion
+					$documents = [...$documents, ...$documentList->documents];
+
+					// Insert new tracked documents
+					$newDocumentIds = [];
 					foreach ($documentList->documents as $document) {
-						$trackedDocumentIdentifier = [
-							'sourceId' => $source->id,
-							'documentId' => $document[$index->getSettings()->primaryKey],
-						];
+						$documentId = $document[$index->getSettings()->primaryKey];
+						$newDocumentIds[] = $documentId;
 
-						$existingTrackedDocument = TrackedDocument::findOne($trackedDocumentIdentifier);
-						if ($existingTrackedDocument !== null) {
-							$existingTrackedDocument->pendingDeletion = false;
-							$existingTrackedDocument->save();
-						} else {
-							(new TrackedDocument($trackedDocumentIdentifier))->save();
-						}
+						(new TrackedDocument([
+							'sourceId' => $source->id,
+							'documentId' => $documentId,
+						]))->save();
 					}
+
+					$removedDocumentIds = [...$removedDocumentIds, ...array_diff($oldDocumentIds, $newDocumentIds)];
 
 					foreach ($documentList->dependentSourceHandles as $dependentSourceHandle) {
 						(new SourceDependency([
@@ -291,29 +286,16 @@ class Sync extends Component
 					}
 				}
 
+				$this->meiliClient->index($index->indexId)->deleteDocuments($removedDocumentIds);
 				$this->meiliClient
 					->index($index->indexId)
-					->addDocuments(array_merge(...$documentBatches), $index->getSettings()->primaryKey);
+					->addDocuments($documents, $index->getSettings()->primaryKey);
 
-				yield $size;
+				yield count($documents);
 
 				if ($this->hasEventHandlers(self::EVENT_AFTER_SYNC_CHUNK)) {
 					$this->trigger(self::EVENT_AFTER_SYNC_CHUNK, $event);
 				}
-			}
-
-			// Purge documents that should no longer exist
-			$documentsToBeDeletedQuery = TrackedDocument::find()
-				->joinWith('source')
-				->where([
-					'indexHandle' => $index->handle,
-					'pendingDeletion' => true,
-				]);
-
-			/** @var TrackedDocument $batchQueryResult */
-			foreach ($documentsToBeDeletedQuery->each() as $batchQueryResult) {
-				$this->meiliClient->index($index->indexId)->deleteDocument($batchQueryResult->documentId);
-				$batchQueryResult->delete();
 			}
 
 			$transaction->commit();
