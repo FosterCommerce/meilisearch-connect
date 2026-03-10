@@ -113,7 +113,7 @@ class Sync extends BaseJob
 		}
 
 		if ($this->sourceHandle === null) {
-			return 'Sync index {$this->indexHandle}';
+			return "Sync index {$this->indexHandle}";
 		}
 
 		$indices = Plugin::getInstance()->settings->getIndices($this->indexHandle);

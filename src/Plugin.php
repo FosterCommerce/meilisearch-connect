@@ -34,7 +34,7 @@ use yii\base\InvalidConfigException;
  */
 class Plugin extends BasePlugin
 {
-	public string $schemaVersion = '1.8.0';
+	public string $schemaVersion = '1.9.0';
 
 	/**
 	 * @return array<non-empty-string, mixed>
