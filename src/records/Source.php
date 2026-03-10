@@ -8,8 +8,8 @@ use craft\db\ActiveRecord;
 /**
  * A Source represents a single, identifiable source of information in a specific Meilisearch index.
  * @property int $id
- * @property string $handle
- * @property string $indexHandle
+ * @property string $handle The Craft element ID of the source, stored as a string.
+ * @property string $indexHandle The handle of the Meilisearch index this source belongs to.
  */
 class Source extends ActiveRecord
 {
@@ -54,6 +54,17 @@ class Source extends ActiveRecord
 		return $this->hasMany(TrackedDocument::class, [
 			'sourceId' => 'id',
 		]);
+	}
+
+	public function detectCyclicDependency(int $parentSourceId): bool
+	{
+		// A cyclic dependency will be where the parent's parent is the current source
+		return SourceDependency::find()
+			->where([
+				'sourceId' => $parentSourceId,
+				'parentSourceId' => $this->id,
+			])
+			->exists();
 	}
 
 	/**

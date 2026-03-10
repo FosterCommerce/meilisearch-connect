@@ -7,7 +7,6 @@ use craft\base\Element;
 use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
 use craft\elements\db\ElementQuery;
-use craft\events\ModelEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\helpers\Queue;
 use craft\services\Utilities;
@@ -16,6 +15,7 @@ use fostercommerce\meilisearch\jobs\Delete as DeleteJob;
 use fostercommerce\meilisearch\jobs\Sync as SyncJob;
 use fostercommerce\meilisearch\models\Index;
 use fostercommerce\meilisearch\models\Settings;
+use fostercommerce\meilisearch\records\Source;
 use fostercommerce\meilisearch\services\Search;
 use fostercommerce\meilisearch\services\Sync;
 use fostercommerce\meilisearch\utilities\Indices;
@@ -33,7 +33,7 @@ use yii\base\InvalidConfigException;
  */
 class Plugin extends BasePlugin
 {
-	public string $schemaVersion = '1.8.0';
+	public string $schemaVersion = '1.9.0';
 
 	/**
 	 * @return array<non-empty-string, mixed>
@@ -73,48 +73,73 @@ class Plugin extends BasePlugin
 			->filter(static fn (Index $index): bool => $index->autoSync);
 
 		if ($indexes->isNotEmpty()) {
-			Event::on(
-				Element::class,
-				Element::EVENT_AFTER_SAVE,
-				function (ModelEvent $event) use ($indexes): void {
-					/** @var Element $sender */
-					$sender = $event->sender;
+			$handleElementSaved = static function (Event $event) use ($indexes): void {
+				/** @var Element $sender */
+				$sender = $event->sender;
 
-					if ($sender->getIsDraft() || $sender->getIsRevision()) {
-						// We generally don't want to index drafts or revisions.
+				if ($sender->getIsDraft() || $sender->getIsRevision()) {
+					// We generally don't want to index drafts or revisions.
+					return;
+				}
+
+				$indexes->each(function (Index $index) use ($sender): void {
+					$isTracked = Source::get($index->handle, (string) $sender->id) instanceof Source;
+					$isActive = in_array($sender->getStatus(), $index->activeStatuses, true);
+
+					if ($isTracked) { // It exists
+						if ($isActive) { // And it is tracked
+							Queue::push(new SyncJob([
+								// So we resync it
+								'indexHandle' => $index->handle,
+								'sourceHandle' => $sender->id,
+							]));
+						} else {
+							Queue::push(new DeleteJob([
+								// Otherwise we delete it
+								'indexHandle' => $index->handle,
+								'sourceHandle' => $sender->id,
+							]));
+						}
+
 						return;
 					}
 
-					$indexes->each(function (Index $index) use ($sender): void {
-						$query = $index->query;
+					if (! $isActive) {
+						return;
+					}
 
-						if (is_callable($query)) {
-							$query = $query();
-						}
+					// At this point, it's likely a new element, and we don't know where to sync it to, so we'll sync it to every index as long as
+					// it's matched by that index's query.
+					$query = $index->query;
 
-						if (! $query instanceof ElementQuery) {
-							return;
-						}
+					if (is_callable($query)) {
+						$query = $query();
+					}
 
-						if (in_array($sender->getStatus(), $index->activeStatuses, true)) {
-							// Push a sync job in case this source needs to be sync'd too.
-							Queue::push(new SyncJob([
-								'indexHandle' => $index->handle,
-								'sourceHandle' => $sender->id,
-							]));
-						} elseif ($query->status(null)->id($sender->id)->exists()) {
-							// If this source previously was sync'd and has been disabled, we should delete it.
-							if ($query->siteId !== null && $query->siteId !== $sender->siteId) {
-								return;
-							}
+					if (! $query instanceof ElementQuery) {
+						return;
+					}
 
-							Queue::push(new DeleteJob([
-								'indexHandle' => $index->handle,
-								'sourceHandle' => $sender->id,
-							]));
-						}
-					});
-				}
+					// If it exists in the index query, then we can sync it.
+					if ($query->status(null)->id($sender->id)->exists()) {
+						Queue::push(new SyncJob([
+							'indexHandle' => $index->handle,
+							'sourceHandle' => $sender->id,
+						]));
+					}
+				});
+			};
+
+			Event::on(
+				Element::class,
+				Element::EVENT_AFTER_RESTORE,
+				$handleElementSaved,
+			);
+
+			Event::on(
+				Element::class,
+				Element::EVENT_AFTER_SAVE,
+				$handleElementSaved,
 			);
 
 			Event::on(
@@ -128,8 +153,12 @@ class Plugin extends BasePlugin
 						return;
 					}
 
-					$indexes->each(function (Index $index) use (&$sender): void {
-						// Ensure that the source is deleted if it has been previously sync'd too.
+					$indexes->each(function (Index $index) use ($sender): void {
+						if (! Source::get($index->handle, (string) $sender->id) instanceof Source) {
+							// We only want to update the index if this source already exists, either as a parent or a dependency.
+							return;
+						}
+
 						Queue::push(new DeleteJob([
 							'indexHandle' => $index->handle,
 							'sourceHandle' => $sender->id,

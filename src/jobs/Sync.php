@@ -11,12 +11,6 @@ use fostercommerce\meilisearch\records\Source;
 
 class Sync extends BaseJob
 {
-	/**
-	 * Sync jobs will create new sync jobs for dependencies recursively.
-	 * This limit is to prevent spawning sync jobs indefinitely.
-	 */
-	public const MAX_DEPENDENCY_RECURSION_LEVEL = 8;
-
 	public ?string $indexHandle = null;
 
 	public null|string|int $sourceHandle = null;
@@ -73,14 +67,23 @@ class Sync extends BaseJob
 			}
 		});
 
+		$maxLevel = Plugin::getInstance()->settings->maxDependencyRecursionLevel;
+		if ($this->dependencyRecursionLevel >= $maxLevel) {
+			$this->setProgress($queue, 1);
+			Craft::info("Maximum recursion level reached after syncing {$this->sourceHandle} for index {$this->indexHandle}. Stopping dependency sync.", 'meilisearch-connect');
+			return;
+		}
+
 		// Find dependent sources and sync them too
 		$indices->each(function (Index $index): void {
+			$currentSource = null;
 			$syncedSourcesQuery = Source::find()
 				->where([
 					'indexHandle' => $index->handle,
 				]);
 
 			if ($this->sourceHandle !== null) {
+				$currentSource = Source::get($index->handle, (string) $this->sourceHandle);
 				$syncedSourcesQuery->andWhere([
 					'handle' => (string) $this->sourceHandle,
 				]);
@@ -88,14 +91,16 @@ class Sync extends BaseJob
 
 			/** @var Source $batchQueryResult */
 			foreach ($syncedSourcesQuery->each() as $batchQueryResult) {
-				/** @var Source $parentSource */
 				foreach ($batchQueryResult->getParentSources()->each() as $parentSource) {
-					if ($this->dependencyRecursionLevel === self::MAX_DEPENDENCY_RECURSION_LEVEL) {
-						throw new \RuntimeException('Sync dependency recursion limit of ' . self::MAX_DEPENDENCY_RECURSION_LEVEL . ' levels reached.');
+					// Prevent immediately obvious cyclic dependencies
+					/** @var Source $parentSource */
+					if ($currentSource?->detectCyclicDependency($parentSource->id) === true) {
+						Craft::warning("Cyclic dependency detected between {$currentSource->handle} and {$parentSource->handle} in index {$parentSource->indexHandle}. Skipping dependency sync.", 'meilisearch-connect');
+						continue;
 					}
 
 					Queue::push(new Sync([
-						'indexHandle' => $this->indexHandle,
+						'indexHandle' => $parentSource->indexHandle,
 						'sourceHandle' => $parentSource->handle,
 						'dependencyRecursionLevel' => $this->dependencyRecursionLevel + 1,
 					]));
@@ -113,17 +118,17 @@ class Sync extends BaseJob
 		}
 
 		if ($this->sourceHandle === null) {
-			return 'Sync index {$this->indexHandle}';
+			return "Sync index {$this->indexHandle}";
 		}
 
-		$indices = Plugin::getInstance()->settings->getIndices($this->indexHandle);
+		$indexes = Plugin::getInstance()->settings->getIndices($this->indexHandle);
 
-		if ($indices instanceof Index) {
-			$indices = [$indices];
+		if ($indexes instanceof Index) {
+			$indexes = [$indexes];
 		}
 
-		$indices = collect($indices);
-
-		return 'Sync ' . $indices->map(fn (Index $index): string => "'{$index->getDocumentName((string) $this->sourceHandle)}' ({$index->handle})")->join(', ');
+		return 'Sync ' . collect($indexes)
+			->map(fn (Index $index): string => "'{$index->getDocumentName((string) $this->sourceHandle)}' ({$index->handle})")
+			->join(', ');
 	}
 }

@@ -19,14 +19,14 @@ class SourceDependency extends ActiveRecord
 	public function getSource(): ActiveQuery
 	{
 		return $this->hasOne(Source::class, [
-			'sourceId' => 'id',
+			'id' => 'sourceId',
 		]);
 	}
 
 	public function getParentSource(): ActiveQuery
 	{
 		return $this->hasOne(Source::class, [
-			'parentSourceId' => 'id',
+			'id' => 'parentSourceId',
 		]);
 	}
 }

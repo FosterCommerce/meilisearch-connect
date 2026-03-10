@@ -157,15 +157,22 @@ class IndexBuilder
 	 * ```
 	 * static function (Index $index, ?int $id, mixed $extra): array {
 	 *   return collect(Entry::find()->all())
-	 *     ->map(static fn ($entry) => new DocumentList([
-	 *        'id' => $entry->id,
-	 *        'title' => $entry->title,
-	 *        'description' => $entry->description,
-	 *      ], $entry->id));
+	 *     ->map(static fn ($entry) => new DocumentList(
+	 *       [
+	 *         'id' => $entry->id,
+	 *         'title' => $entry->title,
+	 *         'description' => $entry->description,
+	 *       ],
+	 *       $entry->id,
+	 *     ));
 	 * }
 	 * ```
 	 *
 	 * Return an empty DocumentList (no `documents`) to prevent an entry from being indexed at all.
+	 *
+	 * Note: Each `sourceHandle` should be unique across the entire resultset. Returning multiple
+	 * DocumentList objects with the same `sourceHandle` could result in inconsistent synchronizing of
+	 * documents.
 	 */
 	public function withFetchFn(?callable $fn): self
 	{
