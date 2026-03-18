@@ -1,6 +1,6 @@
 # Release Notes for Meilisearch Connect
 
-# Unreleased
+# 1.1.5 - 2026-03-18
 
 - Deprecated Index::getSettings() 
 - Prevents search-only indexes from being synchronized
