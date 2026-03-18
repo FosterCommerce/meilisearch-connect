@@ -48,6 +48,7 @@ class Indices extends Utility
 
 			$indices[$handle] = [
 				'indexId' => $index->indexId,
+				'searchOnly' => $index->isSearchOnly(),
 				'documentCount' => $documentCount,
 				'message' => $message ?? null,
 			];

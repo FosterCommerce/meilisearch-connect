@@ -9,7 +9,6 @@ use craft\base\Plugin as BasePlugin;
 use craft\elements\db\ElementQuery;
 use craft\events\ModelEvent;
 use craft\events\RegisterComponentTypesEvent;
-use craft\helpers\ElementHelper;
 use craft\helpers\Queue;
 use craft\services\Utilities;
 use craft\web\twig\variables\CraftVariable;
@@ -70,7 +69,8 @@ class Plugin extends BasePlugin
 		// Only include indexes that have autoSync enabled.
 		// It is true by default, so would need to be explicitly set to false to disable.
 		// However, sync will only be triggered for an index if it has a query which is an instance of ElementQuery.
-		$indexes = collect($settings->indices)->filter(static fn (Index $index): bool => $index->autoSync);
+		$indexes = collect($settings->getIndices())
+			->filter(static fn (Index $index): bool => $index->autoSync);
 
 		if ($indexes->isNotEmpty()) {
 			Event::on(
@@ -80,7 +80,7 @@ class Plugin extends BasePlugin
 					/** @var Element $sender */
 					$sender = $event->sender;
 
-					if (ElementHelper::isDraft($sender) || ElementHelper::isRevision($sender)) {
+					if ($sender->getIsDraft() || $sender->getIsRevision()) {
 						// We generally don't want to index drafts or revisions.
 						return;
 					}
@@ -117,7 +117,7 @@ class Plugin extends BasePlugin
 							foreach ($items as $item) {
 								Queue::push(new DeleteJob([
 									'indexHandle' => $index->handle,
-									'identifier' => $item[$index->getSettings()->primaryKey ?? IndexSettings::DEFAULT_PRIMARY_KEY],
+									'identifier' => $item[$index->getIndexSettings()->primaryKey ?? IndexSettings::DEFAULT_PRIMARY_KEY],
 								]));
 							}
 						}
@@ -134,7 +134,7 @@ class Plugin extends BasePlugin
 					/** @var Element $sender */
 					$sender = $event->sender;
 
-					if (ElementHelper::isDraft($sender) || ElementHelper::isRevision($sender)) {
+					if ($sender->getIsDraft() || $sender->getIsRevision()) {
 						return;
 					}
 
@@ -142,7 +142,7 @@ class Plugin extends BasePlugin
 						// Add the ID from specified in the transform function to the deletedElementIds array.
 						collect($index->execFetchFn($sender->id))
 							->flatten(1) // It's possible to have multiple documents per item, and we need to be able to delete them too.
-							->pluck($index->getSettings()->primaryKey ?? IndexSettings::DEFAULT_PRIMARY_KEY)
+							->pluck($index->getIndexSettings()->primaryKey ?? IndexSettings::DEFAULT_PRIMARY_KEY)
 							->each(static function ($item) use ($index, &$deletedElementIds): void {
 								$deletedElementIds[$index->handle][] = $item;
 							});

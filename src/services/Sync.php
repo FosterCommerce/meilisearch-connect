@@ -53,6 +53,10 @@ class Sync extends Component
 	 */
 	public function syncSettings(Index $index): void
 	{
+		if ($index->isSearchOnly()) {
+			return;
+		}
+
 		$createIndexRes = $this->meiliClient->createIndex($index->indexId);
 		$this->meiliClient->waitForTask($createIndexRes['taskUid']);
 
@@ -61,7 +65,7 @@ class Sync extends Component
 		$version = $versionResponse['pkgVersion'];
 
 		$meilisearchIndex = $this->meiliClient->index($index->indexId);
-		$indexSettings = $index->getSettings();
+		$indexSettings = $index->getIndexSettings();
 
 		if ($indexSettings->sortableAttributes !== null) {
 			$meilisearchIndex->updateSortableAttributes($indexSettings->sortableAttributes);
@@ -182,6 +186,10 @@ class Sync extends Component
 
 	public function flush(Index $index): void
 	{
+		if ($index->isSearchOnly()) {
+			return;
+		}
+
 		$this->meiliClient
 			->index($index->indexId)
 			->deleteAllDocuments();
@@ -189,6 +197,10 @@ class Sync extends Component
 
 	public function delete(Index $index, string|int $identifier): void
 	{
+		if ($index->isSearchOnly()) {
+			return;
+		}
+
 		$this->meiliClient->index($index->indexId)->deleteDocument($identifier);
 	}
 
@@ -198,6 +210,10 @@ class Sync extends Component
 	 */
 	public function sync(Index $index, null|string|int $identifier): Generator
 	{
+		if ($index->isSearchOnly()) {
+			return;
+		}
+
 		foreach ($index->execFetchFn($identifier) as $chunk) {
 			$event = new SyncEvent([
 				'chunk' => $chunk,
@@ -213,7 +229,7 @@ class Sync extends Component
 
 			$this->meiliClient
 				->index($index->indexId)
-				->addDocuments($chunk, $index->getSettings()->primaryKey);
+				->addDocuments($chunk, $index->getIndexSettings()->primaryKey);
 
 			if ($this->hasEventHandlers(self::EVENT_AFTER_SYNC_CHUNK)) {
 				$this->trigger(self::EVENT_AFTER_SYNC_CHUNK, $event);
@@ -230,6 +246,10 @@ class Sync extends Component
 	 */
 	public function refresh(Index $index): Generator
 	{
+		if ($index->isSearchOnly()) {
+			return;
+		}
+
 		$swapIndex = clone $index;
 		$postfix = Craft::$app->getSecurity()->generateRandomString(12);
 		$swapIndex->indexId = "_swap_{$swapIndex->indexId}__{$postfix}";
@@ -260,6 +280,10 @@ class Sync extends Component
 
 	public function getDocumentCount(Index $index): int
 	{
+		if ($index->isSearchOnly()) {
+			return 0;
+		}
+
 		/** @var array{numberOfDocuments: int} $stats */
 		$stats = $this->meiliClient->index($index->indexId)->stats();
 
