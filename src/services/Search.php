@@ -23,7 +23,7 @@ class Search extends Component
 	public function search(string $indexHandle, string $query, array $searchParams = [], array $options = []): SearchResult
 	{
 		/** @var Index $index */
-		$index = Plugin::getInstance()->settings->getIndices($indexHandle);
+		$index = Plugin::getInstance()->settings->getIndices($indexHandle, excludeSearchOnly: false);
 
 		// TODO handle raw search - If $options['raw'] is truthy.
 

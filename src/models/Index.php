@@ -167,8 +167,20 @@ class Index extends Model
 		}
 	}
 
+	/**
+	 * @deprecated Use getIndexSettings() instead.
+	 */
 	public function getSettings(): IndexSettings
 	{
+		return $this->getIndexSettings();
+	}
+
+	public function getIndexSettings(): IndexSettings
+	{
+		if ($this->isSearchOnly()) {
+			throw new \RuntimeException('Search-only indexes cannot have index settings');
+		}
+
 		if (! $this->settings instanceof IndexSettings) {
 			throw new \RuntimeException('Index is not configured correctly');
 		}
@@ -222,6 +234,11 @@ class Index extends Model
 		} else {  // DocumentList
 			yield [$result];
 		}
+	}
+
+	public function isSearchOnly(): bool
+	{
+		return $this->fetch === null;
 	}
 
 	/**

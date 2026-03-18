@@ -26,9 +26,11 @@
 	<div style="margin-bottom: 2rem">
 		<h2>Handle: {{ handle }}</h2>
 		<p>Index ID: <strong>{{ index.indexId }}</strong></p>
+		{% if not index.searchOnly %}
 		<p>
 			Document count: <strong>{{ index.documentCount }}</strong>
 		</p>
+		{% endif %}
 		{% if index.message %}
 			<div class="readable">
 				<blockquote class="note error">
@@ -36,6 +38,7 @@
 				</blockquote>
 			</div>
 		{% endif %}
+		{% if not index.searchOnly %}
 		<div class="buttons">
 			<form class="utility" method="post" accept-charset="UTF-8">
 				{{ csrfInput() }}
@@ -62,5 +65,6 @@
 				<button type="submit" class="btn submit">{{ 'Flush Index'|t('meilisearch-connect') }}</button>
 			</form>
 		</div>
+		{% endif %}
 	</div>
 {% endfor %}

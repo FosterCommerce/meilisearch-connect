@@ -1,5 +1,13 @@
 # Release Notes for Meilisearch Connect
 
+# 1.1.5 - 2026-03-18
+
+- Deprecated Index::getSettings() 
+- Prevents search-only indexes from being synchronized
+- Includes the query offset if present when paging through the results of an ElementQuery.
+- Restores the auto-sync filter for ElementQuery-based indexes.
+- Fix the sync job progress being reset when each index starts synchronzing.
+
 # 1.1.4 - 2025-08-27
 - Allow extra options to be passed through to the fetch function
 
