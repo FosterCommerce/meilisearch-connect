@@ -32,6 +32,7 @@ class Indices extends Utility
 		$plugin = Plugin::getInstance();
 
 		$indices = [];
+		$managedIndexes = 0;
 
 		foreach ($plugin->getSettings()->indices as $handle => $index) {
 			try {
@@ -44,6 +45,10 @@ class Indices extends Utility
 				} else {
 					$message = $e->getMessage();
 				}
+			}
+
+			if (! $index->isSearchOnly()) {
+				++$managedIndexes;
 			}
 
 			$indices[$handle] = [
@@ -59,6 +64,8 @@ class Indices extends Utility
 			'meilisearch-connect/utilities/indices',
 			[
 				'indices' => $indices,
+				'totalIndexes' => count(array_keys($indices)),
+				'managedIndexes' => $managedIndexes,
 			],
 		);
 	}
