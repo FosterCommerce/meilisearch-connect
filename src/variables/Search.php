@@ -6,15 +6,25 @@ use Craft;
 use craft\web\Request;
 use craft\web\twig\variables\Paginate;
 use fostercommerce\meilisearch\Plugin;
+use Meilisearch\Exceptions\ApiException;
 use yii\base\Component;
 use yii\base\InvalidConfigException;
 
+/**
+ * @phpstan-type MeilisearchSearchResult array{
+ *     results: array<int, array<array-key, mixed>>,
+ *     facetDistribution: array<string, mixed>,
+ *     processingTimeMs: int,
+ *     pagination: Paginate,
+ *     error?: ApiException,
+ * }
+ */
 class Search extends Component
 {
 	/**
 	 * @param array<non-empty-string, mixed> $searchParams
 	 * @param array<non-empty-string, mixed> $options
-	 * @return array{results: array<int, array<array-key, mixed>>, pagination: Paginate}
+	 * @return MeilisearchSearchResult
 	 * @throws InvalidConfigException
 	 */
 	public function search(string $indexHandle, string $query, array $searchParams = [], array $options = []): array
@@ -26,7 +36,23 @@ class Search extends Component
 			'page' => $pageNum,
 			...$searchParams,
 		];
-		$results = Plugin::getInstance()->search->search($indexHandle, $query, $searchParams, $options);
+
+		try {
+			$results = Plugin::getInstance()->search->search($indexHandle, $query, $searchParams, $options);
+		} catch (ApiException $e) {
+			Craft::error($e->getMessage(), 'meilisearch-connect');
+			return [
+				'error' => $e,
+				'results' => [],
+				'facetDistribution' => [],
+				'processingTimeMs' => 0,
+				'pagination' => new Paginate([
+					'first' => 0,
+					'last' => 0,
+					'currentPage' => 1,
+				]),
+			];
+		}
 
 		$offset = ($results->getHitsPerPage() * ($results->getPage() - 1));
 
@@ -36,8 +62,7 @@ class Search extends Component
 			'results' => $hits,
 			'facetDistribution' => $results->getFacetDistribution(),
 			'processingTimeMs' => $results->getProcessingTimeMs(),
-			'pagination' => Craft::createObject([
-				'class' => Paginate::class,
+			'pagination' => new Paginate([
 				'first' => $offset + 1,
 				'last' => $offset + $hitsCount,
 				'total' => $results->getTotalHits(),

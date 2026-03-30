@@ -4,6 +4,7 @@ namespace fostercommerce\meilisearch\services;
 
 use fostercommerce\meilisearch\models\Index;
 use fostercommerce\meilisearch\Plugin;
+use Meilisearch\Exceptions\ApiException;
 use Meilisearch\Search\SearchResult;
 use yii\base\Component;
 
@@ -19,6 +20,7 @@ class Search extends Component
 	/**
 	 * @param array<non-empty-string, mixed> $searchParams
 	 * @param array<non-empty-string, mixed> $options
+	 * @throws ApiException if the underlying Meilisearch request fails
 	 */
 	public function search(string $indexHandle, string $query, array $searchParams = [], array $options = []): SearchResult
 	{
