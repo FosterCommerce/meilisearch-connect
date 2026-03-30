@@ -1,5 +1,9 @@
 # Release Notes for Meilisearch Connect
 
+# 1.2.0 - 2026-03-30
+
+- Catch and log possible ApiExceptions thrown when using the search variable 
+
 # 1.1.5 - 2026-03-18
 
 - Deprecated Index::getSettings() 
