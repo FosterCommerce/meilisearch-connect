@@ -39,10 +39,10 @@ class Search extends Component
 
 		try {
 			$results = Plugin::getInstance()->search->search($indexHandle, $query, $searchParams, $options);
-		} catch (ApiException $e) {
-			Craft::error($e->getMessage(), 'meilisearch-connect');
+		} catch (ApiException $apiException) {
+			Craft::error($apiException->getMessage(), 'meilisearch-connect');
 			return [
-				'error' => $e,
+				'error' => $apiException,
 				'results' => [],
 				'facetDistribution' => [],
 				'processingTimeMs' => 0,
