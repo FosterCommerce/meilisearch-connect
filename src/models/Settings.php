@@ -72,8 +72,8 @@ class Settings extends Model
 	public function getIndices(string|array|null $indexHandles = null, bool $excludeSearchOnly = true): mixed
 	{
 		if ($indexHandles !== null) {
-			if(is_array($indexHandles)) {
-				foreach($indexHandles as $indexHandle) {
+			if (is_array($indexHandles)) {
+				foreach ($indexHandles as $indexHandle) {
 					$index = $this->indices[$indexHandle] ?? null;
 					if (! $index instanceof Index) {
 						throw new \RuntimeException("Index '{$indexHandle}' not found");
@@ -81,12 +81,12 @@ class Settings extends Model
 					$indexes[] = $index;
 				}
 				return $indexes;
-			} else {
-				$indexes = $this->indices[$indexHandles] ?? null;
-				if (! $indexes instanceof Index) {
-					throw new \RuntimeException("Index '{$indexHandles}' not found");
-				}
 			}
+			$indexes = $this->indices[$indexHandles] ?? null;
+			if (! $indexes instanceof Index) {
+				throw new \RuntimeException("Index '{$indexHandles}' not found");
+			}
+
 
 			return $indexes;
 		}
