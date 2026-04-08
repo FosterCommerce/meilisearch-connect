@@ -104,19 +104,6 @@ class Search extends Component
 		$hits = $results->getHits();
 		$hitsCount = count($hits);
 
-		// dd([
-		// 	'results' => $hits,
-		// 	'facetDistribution' => $results->getFacetDistribution(),
-		// 	'processingTimeMs' => $results->getProcessingTimeMs(),
-		// 	'pagination' => new Paginate([
-		// 		'first' => $offset + 1,
-		// 		'last' => $offset + $hitsCount,
-		// 		'total' => $results->getEstimatedTotalHits(),
-		// 		'currentPage' => $results->getPage() ?? 1,
-		// 		'totalPages' => $results->getEstimatedTotalHits() / $results->getLimit() ?? 1,
-		// 	]),
-		// ]);
-
 		return [
 			'results' => $hits,
 			'facetDistribution' => $results->getFacetDistribution(),
