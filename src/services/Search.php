@@ -39,16 +39,17 @@ class Search extends Component
 		return $result;
 	}
 
-	public function multisearch(array $indexHandles, string $query, array $searchParams = [], array $options = []): SearchResult
+	public function multisearch(array $indexHandles, string $query, array $searchParams = []): SearchResult
 	{
-		/** @var Index $index */
 		$indexes = Plugin::getInstance()->settings->getIndices($indexHandles, excludeSearchOnly: false);
 		$indexIds = array_map(fn($index) => $index->indexId, $indexes);
 
 		$searchable = array_map(fn($indexId) => (new SearchQuery())->setIndexUid($indexId)->setQuery($query), $indexIds);
 
-		// /** @var SearchResult $result */
-		$result = $this->meiliClient->multiSearch($searchable, (new MultiSearchFederation()));
+		$federation = new MultiSearchFederation();
+		$federation->setLimit($searchParams['hitsPerPage'])->setOffset($searchParams['page'] - 1);
+
+		$result = $this->meiliClient->multiSearch($searchable, $federation);
 
 		return new SearchResult([...$result, 'query' => $query]);
 	}
