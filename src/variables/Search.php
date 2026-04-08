@@ -72,7 +72,7 @@ class Search extends Component
 		];
 	}
 
-	public function multisearch(array $indexHandles, string $query, array $searchParams = [], array $options = []): array
+	public function multisearch(array $indexHandles, string $query, array $searchParams = [], array $options = [], bool $federatedSearch = false): array
 	{
 		/** @var Request $request */
 		$request = Craft::$app->request;
@@ -83,7 +83,7 @@ class Search extends Component
 		];
 
 		try {
-			$results = Plugin::getInstance()->search->multisearch($indexHandles, $query, $searchParams, $options);
+			$results = Plugin::getInstance()->search->multisearch($indexHandles, $query, $searchParams, $options, $federatedSearch);
 		} catch (ApiException $apiException) {
 			Craft::error($apiException->getMessage(), 'meilisearch-connect');
 			return [

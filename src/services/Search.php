@@ -39,21 +39,26 @@ class Search extends Component
 		return $result;
 	}
 
-	public function multisearch(array $indexHandles, string $query, array $searchParams = []): SearchResult
+	public function multisearch(array $indexHandles, string $query, array $searchParams = [], array $options = [], bool $federatedSearch = true): SearchResult
 	{
 		$indexes = Plugin::getInstance()->settings->getIndices($indexHandles, excludeSearchOnly: false);
-		$indexIds = array_map(fn ($index) => $index->indexId, $indexes);
+		$indexIds = array_map(fn($index) => $index->indexId, $indexes);
 
-		$searchable = array_map(fn ($indexId) => (new SearchQuery())->setIndexUid($indexId)->setQuery($query), $indexIds);
+		$searchable = array_map(fn($indexId) =>
+			(new SearchQuery())
+				->setIndexUid($indexId)
+				->setQuery($query), $indexIds);
 
-		$federation = new MultiSearchFederation();
-		$federation->setLimit($searchParams['hitsPerPage'])->setOffset($searchParams['page'] - 1);
+		if($federatedSearch === true) {
+			$federation = new MultiSearchFederation();
+			$federation->setLimit($searchParams['hitsPerPage'])->setOffset($searchParams['page'] - 1);
 
-		$result = $this->meiliClient->multiSearch($searchable, $federation);
-
-		return new SearchResult([
-			...$result,
-			'query' => $query,
-		]);
+			$result = $this->meiliClient->multiSearch($searchable, $federation);
+			return new SearchResult([...$result, 'query' => $query, 'page' => $searchParams['page']]);
+		} else {
+			$multiResult = $this->meiliClient->multiSearch($searchable);
+			$result = array_map(fn($resultsFromIndex) => (new SearchResult([...$resultsFromIndex, 'query' => $query])), $multiResult['results']);
+			dd(new SearchResult(...$multiResult['results']));
+		}
 	}
 }
