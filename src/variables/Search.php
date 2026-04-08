@@ -99,6 +99,7 @@ class Search extends Component
 			];
 		}
 
+		// dd($results);
 		$offset = ($results->getHitsPerPage() * ($results->getPage() - 1));
 
 		$hits = $results->getHits();
@@ -110,9 +111,9 @@ class Search extends Component
 			'pagination' => new Paginate([
 				'first' => $offset + 1,
 				'last' => $offset + $hitsCount,
-				'total' => $results->getTotalHits(),
-				'currentPage' => $results->getPage(),
-				'totalPages' => $results->getTotalPages(),
+				'total' => $results->getEstimatedTotalHits(),
+				'currentPage' => $results->getPage() ?? 1,
+				'totalPages' => $results->getTotalPages() ?? 1,
 			]),
 		];
 	}

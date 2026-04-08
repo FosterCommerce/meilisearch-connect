@@ -4,6 +4,7 @@ namespace fostercommerce\meilisearch\services;
 
 use fostercommerce\meilisearch\models\Index;
 use fostercommerce\meilisearch\Plugin;
+use Meilisearch\Contracts\MultiSearchFederation;
 use Meilisearch\Contracts\SearchQuery;
 use Meilisearch\Exceptions\ApiException;
 use Meilisearch\Search\SearchResult;
@@ -38,36 +39,17 @@ class Search extends Component
 		return $result;
 	}
 
-	public function multisearch(array $indexHandles, string $query, array $searchParams = [], array $options = []): array
+	public function multisearch(array $indexHandles, string $query, array $searchParams = [], array $options = []): SearchResult
 	{
 		/** @var Index $index */
 		$indexes = Plugin::getInstance()->settings->getIndices($indexHandles, excludeSearchOnly: false);
 		$indexIds = array_map(fn($index) => $index->indexId, $indexes);
 
-
-		// TODO handle raw search - If $options['raw'] is truthy.
+		$searchable = array_map(fn($indexId) => (new SearchQuery())->setIndexUid($indexId)->setQuery($query), $indexIds);
 
 		// /** @var SearchResult $result */
-		// $result = $this->meiliClient
-		// 	->index($indexIds)
-		// 	->search($query, $searchParams, $options);
+		$result = $this->meiliClient->multiSearch($searchable, (new MultiSearchFederation()));
 
-		$client = $this->meiliClient;
-		$result = $client->multiSearch([
-			(new SearchQuery())
-			->setIndexUid('dev_experiences')
-			->setQuery($query),
-			(new SearchQuery())
-			->setIndexUid('dev_people')
-			->setQuery($query),
-			(new SearchQuery())
-			->setIndexUid('dev_pages')
-			->setQuery($query),
-			(new SearchQuery())
-			->setIndexUid('dev_updates')
-			->setQuery($query),
-		]);
-
-		return $result;
+		return new SearchResult([...$result, 'query' => $query]);
 	}
 }
