@@ -71,4 +71,49 @@ class Search extends Component
 			]),
 		];
 	}
+
+	public function multisearch(array $indexHandles, string $query, array $searchParams = [], array $options = []): array
+	{
+		/** @var Request $request */
+		$request = Craft::$app->request;
+		$pageNum = $request->getPageNum();
+		$searchParams = [
+			'page' => $pageNum,
+			...$searchParams,
+		];
+
+		try {
+			$results = Plugin::getInstance()->search->multisearch($indexHandles, $query, $searchParams, $options);
+		} catch (ApiException $apiException) {
+			Craft::error($apiException->getMessage(), 'meilisearch-connect');
+			return [
+				'error' => $apiException,
+				'results' => [],
+				'facetDistribution' => [],
+				'processingTimeMs' => 0,
+				'pagination' => new Paginate([
+					'first' => 0,
+					'last' => 0,
+					'currentPage' => 1,
+				]),
+			];
+		}
+
+		$offset = ($results->getHitsPerPage() * ($results->getPage() - 1));
+
+		$hits = $results->getHits();
+		$hitsCount = count($hits);
+		return [
+			'results' => $hits,
+			'facetDistribution' => $results->getFacetDistribution(),
+			'processingTimeMs' => $results->getProcessingTimeMs(),
+			'pagination' => new Paginate([
+				'first' => $offset + 1,
+				'last' => $offset + $hitsCount,
+				'total' => $results->getTotalHits(),
+				'currentPage' => $results->getPage(),
+				'totalPages' => $results->getTotalPages(),
+			]),
+		];
+	}
 }
