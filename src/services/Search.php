@@ -73,11 +73,13 @@ class Search extends Component
 			]);
 		}
 
+		// TODO return results for non-federated multisearch
+		// NOT CURRENTLY WORKING
 		$multiResult = $this->meiliClient->multiSearch($searchable);
 		array_map(fn ($resultsFromIndex): SearchResult => (new SearchResult([
 			...$resultsFromIndex,
 			'query' => $query,
 		])), $multiResult['results']);
-		dd(new SearchResult(...$multiResult['results']));
+		return (new SearchResult(...$multiResult['results']));
 	}
 }
