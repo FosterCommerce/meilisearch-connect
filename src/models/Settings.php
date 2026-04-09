@@ -78,10 +78,13 @@ class Settings extends Model
 					if (! $index instanceof Index) {
 						throw new \RuntimeException("Index '{$indexHandle}' not found");
 					}
+
 					$indexes[] = $index;
 				}
+
 				return $indexes;
 			}
+
 			$indexes = $this->indices[$indexHandles] ?? null;
 			if (! $indexes instanceof Index) {
 				throw new \RuntimeException("Index '{$indexHandles}' not found");

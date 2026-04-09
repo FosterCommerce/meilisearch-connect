@@ -39,19 +39,31 @@ class Search extends Component
 		return $result;
 	}
 
+	/**
+	 * @param array<non-empty-string, mixed> $indexHandles
+	 * @param array<non-empty-string, mixed> $searchParams
+	 * @param array<non-empty-string, mixed> $options
+	 * @throws ApiException if the underlying Meilisearch request fails
+	 */
 	public function multisearch(array $indexHandles, string $query, array $searchParams = [], array $options = [], bool $federatedSearch = true): SearchResult
 	{
+		/** @var array<Index> $indexes */
 		$indexes = Plugin::getInstance()->settings->getIndices($indexHandles, excludeSearchOnly: false);
-		$indexIds = array_map(fn ($index) => $index->indexId, $indexes);
+		$indexIds = array_map(fn ($index): string => $index->getIndexId(), $indexes);
 
-		$searchable = array_map(fn ($indexId) =>
+		$searchable = array_map(fn ($indexId): SearchQuery =>
 			(new SearchQuery())
 				->setIndexUid($indexId)
 				->setQuery($query), $indexIds);
 
-		if ($federatedSearch === true) {
+		if ($federatedSearch) {
+			/** @var int<0, max> $offset */
+			$offset = $searchParams['page'] - 1;
+			/** @var int<0, max> $limit */
+			$limit = $searchParams['hitsPerPage'];
+
 			$federation = new MultiSearchFederation();
-			$federation->setLimit($searchParams['hitsPerPage'])->setOffset($searchParams['page'] - 1);
+			$federation->setLimit($limit)->setOffset($offset);
 
 			$result = $this->meiliClient->multiSearch($searchable, $federation);
 			return new SearchResult([
@@ -60,8 +72,9 @@ class Search extends Component
 				'page' => $searchParams['page'],
 			]);
 		}
+
 		$multiResult = $this->meiliClient->multiSearch($searchable);
-		$result = array_map(fn ($resultsFromIndex) => (new SearchResult([
+		array_map(fn ($resultsFromIndex): SearchResult => (new SearchResult([
 			...$resultsFromIndex,
 			'query' => $query,
 		])), $multiResult['results']);

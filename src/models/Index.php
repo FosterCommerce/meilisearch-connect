@@ -192,6 +192,11 @@ class Index extends Model
 		return $this->settings;
 	}
 
+	public function getIndexId(): string
+	{
+		return $this->indexId;
+	}
+
 	public function getPageCount(): ?int
 	{
 		$query = $this->query;

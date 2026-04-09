@@ -72,6 +72,13 @@ class Search extends Component
 		];
 	}
 
+	/**
+	 * @param array<non-empty-string, mixed> $indexHandles
+	 * @param array<non-empty-string, mixed> $searchParams
+	 * @param array<non-empty-string, mixed> $options
+	 * @return MeilisearchSearchResult
+	 * @throws InvalidConfigException
+	 */
 	public function multisearch(array $indexHandles, string $query, array $searchParams = [], array $options = [], bool $federatedSearch = false): array
 	{
 		/** @var Request $request */
@@ -113,7 +120,7 @@ class Search extends Component
 				'last' => $offset + $hitsCount,
 				'total' => $results->getEstimatedTotalHits(),
 				'currentPage' => $results->getPage() ?? 1,
-				'totalPages' => $results->getEstimatedTotalHits() / $results->getLimit() ?? 1,
+				'totalPages' => ($results->getEstimatedTotalHits() && $results->getLimit()) ? $results->getEstimatedTotalHits() / $results->getLimit() : 1,
 			]),
 		];
 	}
