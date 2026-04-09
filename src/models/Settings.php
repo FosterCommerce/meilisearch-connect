@@ -69,15 +69,29 @@ class Settings extends Model
 	 * @param bool $excludeSearchOnly when true, all search-only indexes will be excluded, unless `$indexHandle` is set.
 	 * @return ($indexHandle is non-empty-string ? Index : Index[])
 	 */
-	public function getIndices(?string $indexHandle = null, bool $excludeSearchOnly = true): mixed
+	public function getIndices(string|array|null $indexHandles = null, bool $excludeSearchOnly = true): mixed
 	{
-		if ($indexHandle !== null) {
-			$index = $this->indices[$indexHandle] ?? null;
-			if (! $index instanceof Index) {
-				throw new \RuntimeException("Index '{$indexHandle}' not found");
+		if ($indexHandles !== null) {
+			if (is_array($indexHandles)) {
+				foreach ($indexHandles as $indexHandle) {
+					$index = $this->indices[$indexHandle] ?? null;
+					if (! $index instanceof Index) {
+						throw new \RuntimeException("Index '{$indexHandle}' not found");
+					}
+
+					$indexes[] = $index;
+				}
+
+				return $indexes;
 			}
 
-			return $index;
+			$indexes = $this->indices[$indexHandles] ?? null;
+			if (! $indexes instanceof Index) {
+				throw new \RuntimeException("Index '{$indexHandles}' not found");
+			}
+
+
+			return $indexes;
 		}
 
 		return collect($this->indices)
