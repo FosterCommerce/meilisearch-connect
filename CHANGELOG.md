@@ -1,13 +1,18 @@
 # Release Notes for Meilisearch Connect
 
+## Unreleased
+
+- Attempt to always clean up swap data after any attempt to refresh an index
+- Added garbage collection to clean up swap data that can sometimes fail to be cleaned up immediately 
+
 # 2.1.1 - 2026-03-30
 
-- Include the Install migration
+- Include the `Install` migration
 
 # 2.1.0 - 2026-03-30
 
 - Improved utility view when no indexes or only search-only indexes are present
-- Catch and log possible ApiExceptions thrown when using the search variable
+- Catch and log possible `ApiExceptions` thrown when using the search variable
 
 # 2.0.0 - 2026-03-18
 

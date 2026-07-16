@@ -23,6 +23,11 @@
 				{{ actionInput('meilisearch-connect/sync/flush-all') }}
 				<button type="submit" class="btn submit">{{ 'Flush All Indices'|t('meilisearch-connect') }}</button>
 			</form>
+			<form class="utility" method="post" accept-charset="UTF-8">
+				{{ csrfInput() }}
+				{{ actionInput('meilisearch-connect/sync/clean-up-swap-data') }}
+				<button type="submit" class="btn submit">{{ 'Clean Up Swap Data'|t('meilisearch-connect') }}</button>
+			</form>
 		</div>
 	{% endif %}
 	{% for handle, index in indices %}
@@ -67,6 +72,12 @@
 						{{ actionInput('meilisearch-connect/sync/flush') }}
 						{{ hiddenInput('handle', handle) }}
 						<button type="submit" class="btn submit">{{ 'Flush Index'|t('meilisearch-connect') }}</button>
+					</form>
+					<form class="utility" method="post" accept-charset="UTF-8">
+						{{ csrfInput() }}
+						{{ actionInput('meilisearch-connect/sync/clean-up-swap-data') }}
+						{{ hiddenInput('prefix', handle) }}
+						<button type="submit" class="btn submit">{{ 'Clean Up Swap Data'|t('meilisearch-connect') }}</button>
 					</form>
 				</div>
 			{% endif %}

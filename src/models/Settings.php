@@ -27,6 +27,15 @@ class Settings extends Model
 	public int $maxDependencyRecursionLevel = 4;
 
 	/**
+	 * The age of swap data before it can be deleted by garbage collection.
+	 *
+	 * This must be a PHP relative datetime string accepted by DateTime, such as "1 day ago" or "2 weeks ago".
+	 *
+	 * If it's set to `null`, then all swap data will be GC'd.
+	 */
+	public ?string $garbageCollectionAge = '1 day ago';
+
+	/**
 	 * A list of configured indices
 	 *
 	 * @var array<non-empty-string, Index>

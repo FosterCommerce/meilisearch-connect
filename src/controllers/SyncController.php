@@ -100,4 +100,19 @@ class SyncController extends Controller
 
 		$this->setSuccessFlash('All indices have been flushed.');
 	}
+
+	public function actionCleanUpSwapData(): void
+	{
+		$this->requireAdmin(false);
+		/** @var string|null $prefix */
+		$prefix = $this->request->getParam('prefix');
+		Plugin::getInstance()->sync->cleanUpSwapIndexes(prefix: $prefix);
+
+		if ($prefix === null) {
+			$this->setSuccessFlash('Cleaned up swap data.');
+			return;
+		}
+
+		$this->setSuccessFlash("Cleaned up swap data for {$prefix}.");
+	}
 }

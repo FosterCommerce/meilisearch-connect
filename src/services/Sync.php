@@ -3,6 +3,7 @@
 namespace fostercommerce\meilisearch\services;
 
 use Craft;
+use DateTime;
 use fostercommerce\meilisearch\events\SyncEvent;
 use fostercommerce\meilisearch\helpers\DocumentList;
 use fostercommerce\meilisearch\models\Index;
@@ -10,6 +11,7 @@ use fostercommerce\meilisearch\records\Source;
 use fostercommerce\meilisearch\records\SourceDependency;
 use fostercommerce\meilisearch\records\TrackedDocument;
 use Generator;
+use Meilisearch\Endpoints\Indexes;
 use Meilisearch\Exceptions\TimeOutException;
 use yii\base\Component;
 use yii\base\Exception;
@@ -309,6 +311,26 @@ class Sync extends Component
 		}
 	}
 
+	public function cleanUpSwapIndexes(?DateTime $before = null, ?string $prefix = null): void
+	{
+		$swapPrefix = $prefix === null ? '_swap_' : "_swap_{$prefix}";
+
+		collect($this->meiliClient->getIndexes()->getResults())
+			->filter(static function (Indexes $index) use ($before, $swapPrefix): bool {
+				$handle = $index->getUid();
+				if ($handle === null || ! str_starts_with($handle, $swapPrefix)) {
+					return false;
+				}
+
+				if (! $before instanceof DateTime) {
+					return true;
+				}
+
+				return $index->getCreatedAt() < $before;
+			})
+			->each(static fn (Indexes $index): array => $index->delete());
+	}
+
 	/**
 	 * @return Generator<int, int>
 	 * @throws Exception
@@ -331,26 +353,28 @@ class Sync extends Component
 		}
 
 		$meiliIndex = $this->meiliClient->index($swapIndex->indexId);
-		$swapResult = $meiliIndex->swapIndexes([
-			[
-				'indexes' => [
-					$index->indexId,
-					$swapIndex->indexId,
+		try {
+			$swapResult = $meiliIndex->swapIndexes([
+				[
+					'indexes' => [
+						$index->indexId,
+						$swapIndex->indexId,
+					],
 				],
-			],
-		]);
-
-		$swapResult = $this->meiliClient->waitForTask($swapResult['taskUid']);
-
-		if ($swapResult['status'] !== 'succeeded') {
-			Source::deleteAll([
-				'indexHandle' => $swapIndex->handle,
 			]);
 
-			throw new \RuntimeException($swapResult['error']['message'] ?? 'Failed to refresh index');
-		}
+			$swapResult = $this->meiliClient->waitForTask($swapResult['taskUid']);
 
-		$meiliIndex->delete();
+			if ($swapResult['status'] !== 'succeeded') {
+				Source::deleteAll([
+					'indexHandle' => $swapIndex->handle,
+				]);
+
+				throw new \RuntimeException($swapResult['error']['message'] ?? 'Failed to refresh index');
+			}
+		} finally {
+			$meiliIndex->delete();
+		}
 
 		Source::getDb()->transaction(function () use ($index, $swapIndex): void {
 			Source::deleteAll([

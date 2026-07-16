@@ -9,8 +9,10 @@ use craft\base\Plugin as BasePlugin;
 use craft\elements\db\ElementQuery;
 use craft\events\RegisterComponentTypesEvent;
 use craft\helpers\Queue;
+use craft\services\Gc;
 use craft\services\Utilities;
 use craft\web\twig\variables\CraftVariable;
+use fostercommerce\meilisearch\jobs\CleanUpSwapData as CleanUpSwapDataJob;
 use fostercommerce\meilisearch\jobs\Delete as DeleteJob;
 use fostercommerce\meilisearch\jobs\Sync as SyncJob;
 use fostercommerce\meilisearch\models\Index;
@@ -65,6 +67,12 @@ class Plugin extends BasePlugin
 		});
 
 		$settings = $this->getSettings();
+
+		Event::on(Gc::class, Gc::EVENT_RUN, static function () use ($settings): void {
+			Queue::push(new CleanUpSwapDataJob([
+				'age' => $settings->garbageCollectionAge,
+			]));
+		});
 
 		// Only include indexes that have autoSync enabled.
 		// It is true by default, so would need to be explicitly set to false to disable.

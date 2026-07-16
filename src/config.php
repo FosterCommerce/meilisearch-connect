@@ -23,6 +23,12 @@ return [
 	 */
 	'maxDependencyRecursionLevel' => 4,
 	/**
+	 * The age of swap data before it can be deleted by garbage collection.
+	 *
+	 * This must be a PHP relative datetime string accepted by DateTime, such as "1 day ago" or "2 weeks ago".
+	 */
+	'garbageCollectionAge' => '1 day ago',
+	/**
 	 * A list of indices that can be created and/or searched.
 	 */
 	'indices' => [
