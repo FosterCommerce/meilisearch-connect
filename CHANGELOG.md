@@ -1,5 +1,9 @@
 # Release Notes for Meilisearch Connect
 
+## 2.2.1 - 2026-07-16
+
+- Paginate through all swap indexes when cleaning up
+
 ## 2.2.0 - 2026-07-16
 
 - Attempt to always clean up swap data after any attempt to refresh an index

@@ -11,6 +11,7 @@ use fostercommerce\meilisearch\records\Source;
 use fostercommerce\meilisearch\records\SourceDependency;
 use fostercommerce\meilisearch\records\TrackedDocument;
 use Generator;
+use Meilisearch\Contracts\IndexesQuery;
 use Meilisearch\Endpoints\Indexes;
 use Meilisearch\Exceptions\TimeOutException;
 use yii\base\Component;
@@ -311,11 +312,26 @@ class Sync extends Component
 		}
 	}
 
-	public function cleanUpSwapIndexes(?DateTime $before = null, ?string $prefix = null): void
+	public function cleanUpSwapIndexes(?DateTime $before = null, ?string $prefix = null): int
 	{
 		$swapPrefix = $prefix === null ? '_swap_' : "_swap_{$prefix}";
 
-		collect($this->meiliClient->getIndexes()->getResults())
+		$limit = 100;
+		$offset = 0;
+		$indexesQuery = (new IndexesQuery())
+			->setOffset($offset)
+			->setLimit($limit);
+		$indexes = collect();
+
+		do {
+			$indexesResult = $this->meiliClient->getIndexes($indexesQuery);
+			$indexes->push(...$indexesResult->getResults());
+			$currentIndexesCount = $indexesResult->getTotal();
+			$offset += $limit;
+			$indexesQuery->setOffset($offset);
+		} while ($indexes->count() < $currentIndexesCount);
+
+		return $indexes
 			->filter(static function (Indexes $index) use ($before, $swapPrefix): bool {
 				$handle = $index->getUid();
 				if ($handle === null || ! str_starts_with($handle, $swapPrefix)) {
@@ -328,7 +344,8 @@ class Sync extends Component
 
 				return $index->getCreatedAt() < $before;
 			})
-			->each(static fn (Indexes $index): array => $index->delete());
+			->each(static fn (Indexes $index): array => $index->delete())
+			->count();
 	}
 
 	/**
