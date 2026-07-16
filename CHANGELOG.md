@@ -1,6 +1,6 @@
 # Release Notes for Meilisearch Connect
 
-## Unreleased
+## 2.2.0 - 2026-07-16
 
 - Attempt to always clean up swap data after any attempt to refresh an index
 - Added garbage collection to clean up swap data that can sometimes fail to be cleaned up immediately 
