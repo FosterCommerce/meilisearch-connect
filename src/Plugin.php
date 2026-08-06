@@ -6,7 +6,7 @@ use Craft;
 use craft\base\Element;
 use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
-use craft\elements\db\ElementQuery;
+use craft\elements\db\ElementQueryInterface;
 use craft\events\RegisterComponentTypesEvent;
 use craft\helpers\Queue;
 use craft\services\Gc;
@@ -76,7 +76,7 @@ class Plugin extends BasePlugin
 
 		// Only include indexes that have autoSync enabled.
 		// It is true by default, so would need to be explicitly set to false to disable.
-		// However, sync will only be triggered for an index if it has a query which is an instance of ElementQuery.
+		// However, sync will only be triggered for an index if it has a query which implements ElementQueryInterface.
 		$indexes = collect($settings->getIndices())
 			->filter(static fn (Index $index): bool => $index->autoSync);
 
@@ -124,9 +124,11 @@ class Plugin extends BasePlugin
 						$query = $query();
 					}
 
-					if (! $query instanceof ElementQuery) {
+					if (! $query instanceof ElementQueryInterface) {
 						return;
 					}
+
+					$query = clone $query;
 
 					// If it exists in the index query, then we can sync it.
 					if ($query->status(null)->id($sender->id)->exists()) {

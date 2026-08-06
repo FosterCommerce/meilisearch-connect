@@ -53,6 +53,8 @@ class Fetch
 				$indexQuery = $indexQuery();
 			}
 
+			$indexQuery = clone $indexQuery;
+
 			if ($sourceHandle !== null) {
 				if ($extra?->anyStatus ?? false) {
 					$indexQuery->status(null);

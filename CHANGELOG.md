@@ -1,5 +1,10 @@
 # Release Notes for Meilisearch Connect
 
+## 2.2.2 - Unreleased
+
+- Fix an issue where configured element queries could be mutated when they're used.
+- Fix an issue which only allowed classes extending `ElementQuery` instead of anything that implemented `ElementQueryInterface`
+
 ## 2.2.1 - 2026-07-16
 
 - Paginate through all swap indexes when cleaning up

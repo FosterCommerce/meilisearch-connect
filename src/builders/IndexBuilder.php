@@ -3,7 +3,6 @@
 namespace fostercommerce\meilisearch\builders;
 
 use craft\base\Element;
-use craft\elements\db\ElementQuery;
 use craft\elements\db\ElementQueryInterface;
 use craft\elements\Entry;
 use fostercommerce\meilisearch\helpers\Fetch;
@@ -90,10 +89,6 @@ class IndexBuilder
 	 */
 	public function withElementQuery(ElementQueryInterface|callable $query, callable $transformer): self
 	{
-		if (! $query instanceof ElementQuery && ! is_callable($query)) {
-			throw new \RuntimeException('Query must be instance of ' . ElementQuery::class . ' or a callable that returns an instance of ' . ElementQuery::class);
-		}
-
 		['query' => $query, 'fetch' => $fetch, 'name' => $name] = Fetch::propertiesFromElementQuery($query, $transformer);
 
 		$this->query = $query;
