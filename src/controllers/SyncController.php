@@ -104,15 +104,19 @@ class SyncController extends Controller
 	public function actionCleanUpSwapData(): void
 	{
 		$this->requireAdmin(false);
-		/** @var string|null $prefix */
-		$prefix = $this->request->getParam('prefix');
-		$count = Plugin::getInstance()->sync->cleanUpSwapIndexes(prefix: $prefix);
+		/** @var string|null $handle */
+		$handle = $this->request->getParam('handle');
+		$plugin = Plugin::getInstance();
 
-		if ($prefix === null) {
-			$this->setSuccessFlash("Cleaned up {$count} swap data indexes");
+		if ($handle === null) {
+			$count = $plugin->sync->cleanUpSwapIndexes();
+			$this->setSuccessFlash("Cleaned up {$count} swap data indexes.");
 			return;
 		}
 
-		$this->setSuccessFlash("Cleaned up {$count} swap data indexes for {$prefix}.");
+		/** @var Index $index */
+		$index = $plugin->getSettings()->getIndices($handle);
+		$count = $plugin->sync->cleanUpSwapIndexes(index: $index);
+		$this->setSuccessFlash("Cleaned up {$count} swap data indexes for {$handle}.");
 	}
 }

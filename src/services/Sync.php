@@ -11,6 +11,7 @@ use fostercommerce\meilisearch\records\Source;
 use fostercommerce\meilisearch\records\SourceDependency;
 use fostercommerce\meilisearch\records\TrackedDocument;
 use Generator;
+use Illuminate\Support\Collection;
 use Meilisearch\Contracts\IndexesQuery;
 use Meilisearch\Endpoints\Indexes;
 use Meilisearch\Exceptions\TimeOutException;
@@ -312,40 +313,25 @@ class Sync extends Component
 		}
 	}
 
-	public function cleanUpSwapIndexes(?DateTime $before = null, ?string $prefix = null): int
+	public function cleanUpSwapIndexes(?DateTime $before = null, ?Index $index = null): int
 	{
-		$swapPrefix = $prefix === null ? '_swap_' : "_swap_{$prefix}";
+		// Swap indexes are named after the index ID, not the handle.
+		$swapPrefix = $index instanceof Index ? "_swap_{$index->indexId}" : '_swap_';
 
-		$limit = 100;
-		$offset = 0;
-		$indexesQuery = (new IndexesQuery())
-			->setOffset($offset)
-			->setLimit($limit);
-		$indexes = collect();
+		$deletedIndexIds = [];
 
+		// Deleting shifts later indexes into offsets an earlier page already read, so sweep until a pass turns up nothing new.
 		do {
-			$indexesResult = $this->meiliClient->getIndexes($indexesQuery);
-			$indexes->push(...$indexesResult->getResults());
-			$currentIndexesCount = $indexesResult->getTotal();
-			$offset += $limit;
-			$indexesQuery->setOffset($offset);
-		} while ($indexes->count() < $currentIndexesCount);
+			$matched = $this->findSwapIndexes($swapPrefix, $before)
+				->reject(static fn (string $indexId): bool => isset($deletedIndexIds[$indexId]));
 
-		return $indexes
-			->filter(static function (Indexes $index) use ($before, $swapPrefix): bool {
-				$handle = $index->getUid();
-				if ($handle === null || ! str_starts_with($handle, $swapPrefix)) {
-					return false;
-				}
+			foreach ($matched as $indexId) {
+				$this->meiliClient->index($indexId)->delete();
+				$deletedIndexIds[$indexId] = true;
+			}
+		} while ($matched->isNotEmpty());
 
-				if (! $before instanceof DateTime) {
-					return true;
-				}
-
-				return $index->getCreatedAt() < $before;
-			})
-			->each(static fn (Indexes $index): array => $index->delete())
-			->count();
+		return count($deletedIndexIds);
 	}
 
 	/**
@@ -419,5 +405,41 @@ class Sync extends Component
 		$stats = $this->meiliClient->index($index->indexId)->stats();
 
 		return $stats['numberOfDocuments'];
+	}
+
+	/**
+	 * @return Collection<int, string>
+	 */
+	private function findSwapIndexes(string $swapPrefix, ?DateTime $before): Collection
+	{
+		$limit = 100;
+		$offset = 0;
+		$indexes = collect();
+
+		// A short page is the last one.
+		do {
+			$indexesPage = $this->meiliClient
+				->getIndexes((new IndexesQuery())->setOffset($offset)->setLimit($limit))
+				->getResults();
+
+			$indexes->push(...$indexesPage);
+			$offset += $limit;
+		} while (count($indexesPage) === $limit);
+
+		return $indexes
+			->filter(static function (Indexes $swapIndex) use ($before, $swapPrefix): bool {
+				$indexId = $swapIndex->getUid();
+				if ($indexId === null || ! str_starts_with($indexId, $swapPrefix)) {
+					return false;
+				}
+
+				if (! $before instanceof DateTime) {
+					return true;
+				}
+
+				return $swapIndex->getCreatedAt() < $before;
+			})
+			->map(static fn (Indexes $swapIndex): string => (string) $swapIndex->getUid())
+			->values();
 	}
 }
