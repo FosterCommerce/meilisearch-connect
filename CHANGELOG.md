@@ -4,6 +4,7 @@
 
 - Fix an issue where configured element queries could be mutated when they're used.
 - Fix an issue which only allowed classes extending `ElementQuery` instead of anything that implemented `ElementQueryInterface`
+- Fix the `EmbeddedParams` type so embedder settings only require `source`, matching what Meilisearch accepts per source
 
 ## 2.2.1 - 2026-07-16
 
