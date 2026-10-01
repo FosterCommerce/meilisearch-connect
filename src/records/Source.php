@@ -2,6 +2,7 @@
 
 namespace fostercommerce\meilisearch\records;
 
+use Craft;
 use craft\db\ActiveQuery;
 use craft\db\ActiveRecord;
 
@@ -80,10 +81,16 @@ class Source extends ActiveRecord
 		/** @var Source|null $source */
 		$source = self::findOne($sourceIdentifier);
 
-		if ($createIfMissing && $source === null) {
-			$source = new self($sourceIdentifier);
-			$source->save();
+		if ($source instanceof self || ! $createIfMissing) {
+			return $source;
 		}
+
+		Craft::$app->getDb()->createCommand()
+			->upsert(self::tableName(), $sourceIdentifier, false)
+			->execute();
+
+		/** @var Source $source */
+		$source = self::findOne($sourceIdentifier);
 
 		return $source;
 	}
