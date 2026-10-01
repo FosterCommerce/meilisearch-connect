@@ -116,7 +116,7 @@ class SyncController extends Controller
 
 		/** @var Index $index */
 		$index = $plugin->getSettings()->getIndices($handle);
-		$count = $plugin->sync->cleanUpSwapIndexes(index: $index);
+		$count = $plugin->sync->cleanUpSwapIndexes(prefix: $index->indexId);
 		$this->setSuccessFlash("Cleaned up {$count} swap data indexes for {$handle}.");
 	}
 }

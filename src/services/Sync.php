@@ -313,10 +313,9 @@ class Sync extends Component
 		}
 	}
 
-	public function cleanUpSwapIndexes(?DateTime $before = null, ?Index $index = null): int
+	public function cleanUpSwapIndexes(?DateTime $before = null, ?string $prefix = null): int
 	{
-		// Swap indexes are named after the index ID, not the handle.
-		$swapPrefix = $index instanceof Index ? "_swap_{$index->indexId}" : '_swap_';
+		$swapPrefix = $prefix === null ? '_swap_' : "_swap_{$prefix}";
 
 		$deletedIndexIds = [];
 
