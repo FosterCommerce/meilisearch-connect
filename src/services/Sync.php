@@ -3,6 +3,7 @@
 namespace fostercommerce\meilisearch\services;
 
 use Craft;
+use craft\errors\MutexException;
 use DateTime;
 use fostercommerce\meilisearch\events\SyncEvent;
 use fostercommerce\meilisearch\helpers\DocumentList;
@@ -214,20 +215,26 @@ class Sync extends Component
 			return;
 		}
 
-		Source::getDb()->transaction(function () use ($sourceHandle, $index): void {
-			$source = Source::get($index->handle, $sourceHandle);
+		$lockName = $this->acquireSourceMutex($index, $sourceHandle);
 
-			if (! $source instanceof Source) {
-				return;
-			}
+		try {
+			Source::getDb()->transaction(function () use ($sourceHandle, $index): void {
+				$source = Source::get($index->handle, $sourceHandle);
 
-			/** @var TrackedDocument $batchQueryResult */
-			foreach ($source->getTrackedDocuments()->each() as $batchQueryResult) {
-				$this->meiliClient->index($index->indexId)->deleteDocument($batchQueryResult->documentId);
-			}
+				if (! $source instanceof Source) {
+					return;
+				}
 
-			$source->delete();
-		});
+				/** @var TrackedDocument $batchQueryResult */
+				foreach ($source->getTrackedDocuments()->each() as $batchQueryResult) {
+					$this->meiliClient->index($index->indexId)->deleteDocument($batchQueryResult->documentId);
+				}
+
+				$source->delete();
+			});
+		} finally {
+			Craft::$app->getMutex()->release($lockName);
+		}
 	}
 
 	/**
@@ -256,46 +263,52 @@ class Sync extends Component
 			$removedDocumentIds = [];
 
 			foreach ($documentLists as $documentList) {
-				$source = Source::get($index->handle, $documentList->sourceHandle, true);
+				$lockName = $this->acquireSourceMutex($index, $documentList->sourceHandle);
 
-				// Fetch old document IDs before clearing so we can diff later
-				/** @var string[] $oldDocumentIds */
-				$oldDocumentIds = TrackedDocument::find()
-					->select('documentId')
-					->where([
+				try {
+					$source = Source::get($index->handle, $documentList->sourceHandle, true);
+
+					// Fetch old document IDs before clearing so we can diff later
+					/** @var string[] $oldDocumentIds */
+					$oldDocumentIds = TrackedDocument::find()
+						->select('documentId')
+						->where([
+							'sourceId' => $source->id,
+						])
+						->column();
+
+					TrackedDocument::deleteAll([
 						'sourceId' => $source->id,
-					])
-					->column();
+					]);
 
-				TrackedDocument::deleteAll([
-					'sourceId' => $source->id,
-				]);
-
-				SourceDependency::deleteAll([
-					'parentSourceId' => $source->id,
-				]);
-
-				$documents = [...$documents, ...$documentList->documents];
-
-				// Insert new tracked documents
-				$newDocumentIds = [];
-				foreach ($documentList->documents as $document) {
-					$documentId = $document[$index->getIndexSettings()->primaryKey];
-					$newDocumentIds[] = $documentId;
-
-					(new TrackedDocument([
-						'sourceId' => $source->id,
-						'documentId' => $documentId,
-					]))->save();
-				}
-
-				$removedDocumentIds = [...$removedDocumentIds, ...array_diff($oldDocumentIds, $newDocumentIds)];
-
-				foreach ($documentList->dependentSourceHandles as $dependentSourceHandle) {
-					(new SourceDependency([
-						'sourceId' => Source::get($index->handle, $dependentSourceHandle, true)->id,
+					SourceDependency::deleteAll([
 						'parentSourceId' => $source->id,
-					]))->save();
+					]);
+
+					$documents = [...$documents, ...$documentList->documents];
+
+					// Insert new tracked documents
+					$newDocumentIds = [];
+					foreach ($documentList->documents as $document) {
+						$documentId = $document[$index->getIndexSettings()->primaryKey];
+						$newDocumentIds[] = $documentId;
+
+						(new TrackedDocument([
+							'sourceId' => $source->id,
+							'documentId' => $documentId,
+						]))->save();
+					}
+
+					$removedDocumentIds = [...$removedDocumentIds, ...array_diff($oldDocumentIds, $newDocumentIds)];
+
+					foreach ($documentList->dependentSourceHandles as $dependentSourceHandle) {
+						(new SourceDependency([
+							'sourceId' => Source::get($index->handle, $dependentSourceHandle, true)->id,
+							'parentSourceId' => $source->id,
+						]))->save();
+					}
+				} finally {
+					Craft::$app->getMutex()->release($lockName);
 				}
 			}
 
@@ -419,5 +432,19 @@ class Sync extends Component
 		$stats = $this->meiliClient->index($index->indexId)->stats();
 
 		return $stats['numberOfDocuments'];
+	}
+
+	private function acquireSourceMutex(Index $index, string $sourceHandle): string
+	{
+		$lockName = "meilisearch-connect:sync:{$index->handle}:{$sourceHandle}";
+
+		if (! Craft::$app->getMutex()->acquire($lockName)) {
+			throw new MutexException(
+				$lockName,
+				"Could not acquire Meilisearch lock for index '{$index->handle}' and source '{$sourceHandle}': another sync or delete is already running.",
+			);
+		}
+
+		return $lockName;
 	}
 }
