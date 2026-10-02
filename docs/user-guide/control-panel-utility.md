@@ -9,8 +9,8 @@ Managed indexes have these actions:
 | Action             | What it does                                                       |
 |--------------------|--------------------------------------------------------------------|
 | Sync Settings      | Creates the index if needed and sends configured settings.         |
-| Sync Index         | Queues a sync for the current sources.                             |
 | Refresh Index      | Builds a replacement index and swaps it into place.                |
+| Sync Index         | Queues a sync for the current sources.                             |
 | Flush Index        | Deletes every document and tracking record.                        |
 | Clean Up Swap Data | Deletes the temporary indexes that refreshes create, including one a running refresh is using. |
 
