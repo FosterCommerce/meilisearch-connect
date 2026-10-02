@@ -1,11 +1,13 @@
 # Release Notes for Meilisearch Connect
 
-## 2.2.2 - Unreleased
+## 2.2.2 - 2026-10-02
 
-- Fix an issue where configured element queries could be mutated when they're used
-- Fix an issue which only allowed classes extending `ElementQuery` instead of anything that implemented `ElementQueryInterface`
-- Fix the `EmbeddedParams` type so embedder settings only require `source`, matching what Meilisearch accepts per source
-- Fixed issue where swap index cleanup could sometimes miss swap indexes
+### Fixed
+- Fixed a bug where saving an element could narrow the element query configured for its index.
+- Fixed an error that occurred when an index used an element query that does not extend `ElementQuery`.
+- Fixed a bug where static analysis rejected embedder settings that only set `source`.
+- Fixed a bug where “Clean Up Swap Data” could leave swap indexes behind.
+- Fixed a bug where “Clean Up Swap Data” on an index removed nothing when its index ID differed from its handle.
 
 ## 2.2.1 - 2026-07-16
 

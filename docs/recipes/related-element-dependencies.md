@@ -26,14 +26,16 @@ return [
                 static function (Entry $entry, callable $registerDependency): array {
                     $author = $entry->author;
 
-                    $registerDependency($author);
+                    if ($author !== null) {
+                        $registerDependency($author);
+                    }
 
                     return [
                         'id' => $entry->id,
                         'title' => $entry->title,
                         'body' => $entry->body,
-                        'authorName' => $author->fullName,
-                        'authorBio' => $author->bio,
+                        'authorName' => $author?->fullName,
+                        'authorBio' => $author?->bio,
                     ];
                 },
             )

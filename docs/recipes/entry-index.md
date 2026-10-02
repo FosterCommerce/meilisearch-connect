@@ -42,8 +42,8 @@ return [
 Then run:
 
 ```sh
-php craft meilisearch-connect/sync/settings
-php craft meilisearch-connect/sync/index news
+./craft meilisearch-connect/sync/settings
+./craft meilisearch-connect/sync/index news
 ```
 
-The default auto-sync setting is on. Saved, restored, and deleted entries are kept up to date after the first sync.
+The default auto-sync setting is on. After the first sync, the plugin keeps saved, restored, and deleted entries up to date.

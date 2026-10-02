@@ -1,27 +1,31 @@
 # Meilisearch Connect documentation
 
-Index Craft data in Meilisearch and search it from Twig or PHP.
+Build Meilisearch indexes from any Craft element query, keep them current as content changes, and rebuild them with zero downtime, on a server you can host yourself to keep search costs down.
 
 ## Where to go
 
-**First time here?** Start with [Getting started](./getting-started.md). It covers install and configuration. See the [configuration reference](./reference/configuration.md) for all configuration options.
+**Getting started:** [a walkthrough](./getting-started.md) from install to the first search.
 
-**Using the plugin from PHP code?** See the [class reference](./reference/class-reference.md).
+**User guide:**
 
-**Syncing or searching in indexes?** See [syncing](./reference/console-commands.md) and the [Twig search recipe](./recipes/search-twig.md).
+- [Control Panel utility](./user-guide/control-panel-utility.md), view configured indexes and run sync actions
 
-**Using the Control Panel?** See the [Meilisearch Connect utility](./user-guide/control-panel-utility.md).
+**Dev guide:**
 
-**Building custom indexes?** See the developer guide:
+- [Transformers and dependencies](./dev-guide/transformers-and-dependencies.md), turn elements into documents and keep them current
+- [Custom data](./dev-guide/custom-data.md), index data that is not a Craft element
+- [Sync events](./dev-guide/sync-events.md), inspect or change a document batch
 
-- [Transformers and dependencies](./dev-guide/transformers-and-dependencies.md)
-- [Custom data](./dev-guide/custom-data.md)
-- [Sync events](./dev-guide/sync-events.md)
+**Reference:**
+
+- [Configuration](./reference/configuration.md), every setting and index option
+- [Console commands](./reference/console-commands.md), sync, flush, and refresh indexes
+- [Class reference](./reference/class-reference.md), use the plugin from PHP code
 
 **Recipes:**
 
-- [Entry index](./recipes/entry-index.md)
-- [Multiple documents per element](./recipes/multiple-documents-per-element.md)
-- [Split an element into content documents](./recipes/split-element-documents.md)
-- [Related element dependencies](./recipes/related-element-dependencies.md)
-- [Twig search](./recipes/search-twig.md)
+- [Entry index](./recipes/entry-index.md), index news entries
+- [Multiple documents per element](./recipes/multiple-documents-per-element.md), one document per article and tag pair
+- [Split an element into content documents](./recipes/split-element-documents.md), one document per paragraph
+- [Related element dependencies](./recipes/related-element-dependencies.md), reindex articles when an author changes
+- [Twig search](./recipes/search-twig.md), search with filters, sorting, and pagination

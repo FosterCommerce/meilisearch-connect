@@ -1,6 +1,6 @@
 # Configuration reference
 
-Settings live in `config/meilisearch-connect.php`.
+Settings are in `config/meilisearch-connect.php`.
 
 ## Root settings
 
@@ -8,7 +8,7 @@ Settings live in `config/meilisearch-connect.php`.
 | --- | --- | --- |
 | `meiliHostUrl` | `null` | Meilisearch server URL. |
 | `meiliAdminApiKey` | `null` | Key used for settings, indexing, and deletes. |
-| `meiliSearchApiKey` | `null` | Key used for searches. |
+| `meiliSearchApiKey` | `null` | Key used for searches. Use it for storefront searches. |
 | `maxDependencyRecursionLevel` | `4` | Maximum follow-up sync depth for dependencies. |
 | `garbageCollectionAge` | `'1 day ago'` | Age of failed refresh indexes that Craft garbage collection can remove. Use a PHP relative date string or `null` to remove all of them. |
 | `indices` | `[]` | Index definitions keyed by handle. |
@@ -35,7 +35,7 @@ MEILISEARCH_PAGES_INDEX=pages_local
 # MEILISEARCH_PAGES_INDEX=pages_production
 ```
 
-`config.php`:
+`config/meilisearch-connect.php`:
 
 ```php
 use craft\helpers\App;
@@ -51,7 +51,7 @@ use craft\helpers\App;
 
 Use a search-only configuration when another service indexes data in Meilisearch, but Craft still needs to search it.
 
-The most basic configuration is to simply specify the index handle. This plugin only needs to know where to look in Meilisearch to enable searching.
+The most basic configuration is to specify the index handle. This plugin only needs to know where to look in Meilisearch to enable searching.
 
 ```php
 return [
@@ -80,6 +80,8 @@ Use a full configuration when this plugin indexes data. A managed index has a fe
 | `withAutoSync(bool $enabled)` | Enable or disable automatic element sync. Default: `true`.                           |
 | `withActiveStatuses(array $statuses)` | Statuses that count as active during automatic sync. Default: `Element::STATUS_ENABLED` and `Entry::STATUS_LIVE`. |
 
+When a tracked element is saved with a status that is not in `activeStatuses`, the plugin removes its documents. Automatic sync skips drafts and revisions. A user's active status is `active`, so for users pass `withActiveStatuses(['active'])`.
+
 Use an `ElementQueryInterface` instance or a callable that returns one with `withElementQuery()`. Prefer a callable so that queries don't execute during bootstrap. This is the case when using filters such as `site($siteHandle)` which does a lookup query to get the site ID.
 
 ### Callable arguments
@@ -107,7 +109,7 @@ The fetch callback receives:
 | --- | --- | --- |
 | `$index` | `Index` | The configured index. |
 | `$sourceHandle` | `null|string|int` | A source ID when syncing one source, otherwise `null`. |
-| `$extra` | `mixed` | Extra data passed to the fetch operation. |
+| `$extra` | `mixed` | Always `null`. |
 
 Return one `DocumentList`, an array of `DocumentList` objects, or a generator that yields arrays of `DocumentList` objects.
 
@@ -129,13 +131,13 @@ The name callback receives:
 | --- | --- | --- |
 | `$index` | `Index` | The configured index. |
 | `$sourceHandle` | `string|int` | The source ID being synced. |
-| `$extra` | `mixed` | Extra data passed to the name operation. |
+| `$extra` | `mixed` | Always `null`. |
 
 Return a string for the queue job description.
 
 ### Meilisearch settings
 
-Pass `IndexSettingsBuilder::create()` to `IndexBuilder::fromSettings()`.
+Pass the array that `IndexSettingsBuilder::build()` returns to `IndexBuilder::fromSettings()`.
 
 The builder has methods for the Meilisearch index settings: primary key, searchable, filterable, sortable, and displayed attributes; ranking rules; faceting; pagination; synonyms; typo tolerance; stop words; dictionary; tokens; and embedders.
 
@@ -149,4 +151,4 @@ IndexSettingsBuilder::create()
     ->build()
 ```
 
-Except for `primaryKey`, the plugin resets a setting left as `null` when `sync/settings` runs. Check the [Meilisearch settings reference](https://www.meilisearch.com/docs/reference/api/settings) for valid values.
+Except for `primaryKey`, the plugin resets a setting left as `null` when `sync/settings` runs. `facetSearch` and `prefixSearch` are sent and reset only on Meilisearch 1.12.0 and later. Check the [Meilisearch settings reference](https://www.meilisearch.com/docs/reference/api/settings) for valid values.

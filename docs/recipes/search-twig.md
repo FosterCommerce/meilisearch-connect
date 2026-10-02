@@ -1,12 +1,12 @@
 # Recipe: search from Twig
 
-This uses a `q` query parameter, filters to the news section, and renders pagination.
+This searches the `news` index from [Recipe: index entries](./entry-index.md). It uses a `q` query parameter, filters to one category, and renders pagination.
 
 ```twig
 {% set query = craft.app.request.getParam('q', '') %}
 {% set search = craft.meilisearch.search('news', query, {
     hitsPerPage: 12,
-    filter: 'section = news',
+    filter: 'category = "Press"',
     sort: ['postDate:desc'],
 }) %}
 

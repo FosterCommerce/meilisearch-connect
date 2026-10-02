@@ -58,8 +58,8 @@ Call `$registerDependency()` for an element whose data appears in the source doc
 
 When that element is saved or deleted, the plugin queues a sync for the source element. In the example above, changing an author reindexes every tracked article that registered that author.
 
-Only register elements that affect the document. Do not register the source element itself.
+Only register elements that affect the document. Do not register the source element itself. Dependency syncs need the index's auto-sync setting on, which is the default.
 
-Dependency sync stops after `maxDependencyRecursionLevel` jobs. The default is `4`. Direct two-way loops are skipped.
+Dependency sync follows at most `maxDependencyRecursionLevel` levels of dependents. The default is `4`. Direct two-way loops are skipped.
 
 See [Multiple documents per element](../recipes/multiple-documents-per-element.md), [Split an element into content documents](../recipes/split-element-documents.md), and [Related element dependencies](../recipes/related-element-dependencies.md) for full examples.
