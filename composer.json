@@ -1,6 +1,7 @@
 {
 	"name": "fostercommerce/meilisearch-connect",
 	"type": "craft-plugin",
+	"description": "Build Meilisearch indexes from any Craft element query, keep them current as content changes, and rebuild them with zero downtime, on a server you can host yourself to keep search costs down.",
 	"license": "proprietary",
 	"support": {
 		"email": "support@fostercommerce.com",

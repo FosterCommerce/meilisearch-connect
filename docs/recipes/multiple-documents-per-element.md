@@ -52,6 +52,6 @@ The plugin tracks every document ID returned for the entry. When an article lose
 Run the initial sync:
 
 ```sh
-php craft meilisearch-connect/sync/settings
-php craft meilisearch-connect/sync/index articles-by-tag
+./craft meilisearch-connect/sync/settings
+./craft meilisearch-connect/sync/index articles-by-tag
 ```

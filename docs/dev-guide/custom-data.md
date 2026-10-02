@@ -2,7 +2,7 @@
 
 Use `withFetchFn()` when the source is not a Craft element query.
 
-The fetch function receives the index, an optional source handle, and extra data. Return one `DocumentList`, an array of them, or a generator that yields arrays of them.
+The fetch function receives the index and an optional source handle. Its third argument, `$extra`, is always `null`. Return one `DocumentList`, an array of them, or a generator that yields arrays of them.
 
 ```php
 use fostercommerce\meilisearch\builders\IndexBuilder;

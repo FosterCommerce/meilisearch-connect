@@ -8,8 +8,8 @@ Builds one index configuration.
 
 | Method | Purpose |
 | --- | --- |
-| `create()` | Start a search-only index. |
-| `fromSettings(array $settings)` | Start a managed index with Meilisearch settings. |
+| `create()` | Start a builder with no Meilisearch settings. An index with no fetch function is search-only. |
+| `fromSettings(array $settings)` | Start a builder with Meilisearch settings. |
 | `withIndexId(string $id)` | Set the Meilisearch index ID. |
 | `withPageSize(int $size)` | Set the source batch size. |
 | `withElementQuery(ElementQueryInterface|callable $query, callable $transformer)` | Fetch and transform Craft elements. |
@@ -62,6 +62,8 @@ See the [configuration reference](./configuration.md) for an example and Meilise
 Access it through `Plugin::getInstance()->search`.
 
 ```php
+use fostercommerce\meilisearch\Plugin;
+
 $result = Plugin::getInstance()->search->search(
     'news', // Index handle
     'summer sale', // Search query
@@ -82,10 +84,10 @@ Access it through `Plugin::getInstance()->sync`.
 | Method | Purpose |
 | --- | --- |
 | `syncSettings(Index $index)` | Create the index and apply its configured settings. |
-| `sync(Index $index, ?string $sourceHandle)` | Sync one source or every source. Returns a generator of document counts. |
+| `sync(Index $index, ?string $sourceHandle)` | Sync one source or every source. Returns a generator of document counts. Iterate it to run the sync. |
 | `delete(Index $index, string $sourceHandle)` | Delete documents created by one source. |
 | `flush(Index $index)` | Delete every document and tracking record. |
-| `refresh(Index $index)` | Build, sync, and swap a temporary index. Returns a generator of document counts. |
+| `refresh(Index $index)` | Build, sync, and swap a temporary index. Returns a generator of document counts. Iterate it to run the refresh. |
 | `cleanUpSwapIndexes(?DateTime $before = null, ?string $prefix = null)` | Delete temporary refresh indexes. Returns the number deleted. |
 | `getDocumentCount(Index $index)` | Return the remote document count. |
 
@@ -111,6 +113,18 @@ Queue::push(new Sync([
     'sourceHandle' => 42,
 ]));
 ```
+
+## `DocumentList`
+
+`fostercommerce\meilisearch\helpers\DocumentList`
+
+Groups the documents one source produces. A custom fetch function returns these. See [Custom data](../dev-guide/custom-data.md).
+
+| Argument | Type | Purpose |
+| --- | --- | --- |
+| `$documentOrDocuments` | `array` | One document, or a list of documents. |
+| `$sourceHandle` | `string` | The handle of the source that produced the documents, such as an element ID. |
+| `$dependentSourceHandles` | `string[]` | IDs of elements the documents include. When one is saved or deleted, the plugin syncs this source. Default: `[]`. |
 
 ## `SyncEvent`
 

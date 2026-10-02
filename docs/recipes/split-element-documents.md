@@ -26,7 +26,7 @@ return [
             ->withElementQuery(
                 static fn (): EntryQuery => Entry::find()->section('articles'),
                 static function (Entry $entry): array {
-                    $parts = explode('\n', $entry->content);
+                    $parts = explode("\n", $entry->content);
 
                     return array_map(
                         static fn (string $content, int $index): array => [
@@ -57,6 +57,6 @@ When the entry content changes, the plugin compares the returned IDs with the tr
 Run the initial sync:
 
 ```sh
-php craft meilisearch-connect/sync/settings
-php craft meilisearch-connect/sync/index articles
+./craft meilisearch-connect/sync/settings
+./craft meilisearch-connect/sync/index articles
 ```
