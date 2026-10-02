@@ -27,21 +27,21 @@ use craft\base\Model;
  *
  * @phpstan-type EmbeddedParams array<non-empty-string, array{
  *     source: string,
- *     url: string,
- *     apiKey: string,
- *     model: string,
- *     documentTemplate: string,
- *     documentTemplateMaxBytes: int,
- *     dimensions: int,
- *     revision: string,
- *     distribution: array{
+ *     url?: string,
+ *     apiKey?: string,
+ *     model?: string,
+ *     documentTemplate?: string,
+ *     documentTemplateMaxBytes?: int,
+ *     dimensions?: int,
+ *     revision?: string,
+ *     distribution?: array{
  *         mean: float,
  *         sigma: float
  *     },
- *     request: array<array-key, mixed>,
- *     response: array<array-key, mixed>,
- *     headers: array<array-key, mixed>,
- *     binaryQuantized: bool
+ *     request?: array<array-key, mixed>,
+ *     response?: array<array-key, mixed>,
+ *     headers?: array<array-key, mixed>,
+ *     binaryQuantized?: bool
  * }>
  */
 class IndexSettings extends Model
